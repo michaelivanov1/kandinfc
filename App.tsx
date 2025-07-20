@@ -1,20 +1,14 @@
-import React, { JSX } from 'react';
+import React, { JSX, useState } from 'react';
 import { SafeAreaView, Text, StyleSheet, Button } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 
-const App = (): JSX.Element => {
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>kandi app</Text>
-      <Button onPress={readNfcTag} title="read nfc tag" />
-    </SafeAreaView>
-  );
-};
+const [tagID, setTagID] = useState<string | null>(null);
 
 async function readNfcTag() {
   try {
     await NfcManager.requestTechnology(NfcTech.Ndef);
     const tag = await NfcManager.getTag();
+    setTagID(tag?.id ?? null);
     console.log("Tag ID:", tag?.id);
     // eventually send ID to backend
   } catch (ex) {
@@ -23,6 +17,17 @@ async function readNfcTag() {
     NfcManager.cancelTechnologyRequest();
   }
 }
+
+const App = (): JSX.Element => {
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.text}>kandi app</Text>
+      <Button onPress={readNfcTag} title="read nfc tag" />
+      <Text style={styles.text}>tag: {tagID}</Text>
+    </SafeAreaView>
+  );
+};
+
 
 const styles = StyleSheet.create({
   container: {
@@ -36,5 +41,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
 });
+
 
 export default App;
