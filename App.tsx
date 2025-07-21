@@ -1,3 +1,5 @@
+// run: npx react-native run-android
+
 import React, { JSX, useState } from 'react';
 import { SafeAreaView, Text, StyleSheet, Button } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
