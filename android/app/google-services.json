@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "602788145762",
+    "project_id": "kandinfc",
+    "storage_bucket": "kandinfc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602788145762:android:8fe9575d8aee675a48bf3b",
+        "android_client_info": {
+          "package_name": "com.kandinfc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYtCaV-HBqn9bPLuq9FLPFY3T371ugS1k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
