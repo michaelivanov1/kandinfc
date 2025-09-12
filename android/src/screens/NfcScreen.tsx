@@ -1,6 +1,7 @@
 // src/screens/NfcScreen.tsx
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, Text, StyleSheet, Button, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 
@@ -10,6 +11,10 @@ NfcManager.start();
 const NfcScreen = () => {
     const [tagID, setTagID] = useState<string | null>(null);
     const [isReading, setIsReading] = useState(false);
+    const navigation = useNavigation<any>();
+
+    // get signed in users data
+    // const userEmail = auth().currentUser?.email; 
 
     // Register NFC events on mount
     useEffect(() => {
@@ -66,6 +71,12 @@ const NfcScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
+
+            <Button
+                title="Profile"
+                onPress={() => navigation.navigate('Profile')}
+            />
+
             <Text style={styles.text}>Kandi NFC App</Text>
 
             <Button
