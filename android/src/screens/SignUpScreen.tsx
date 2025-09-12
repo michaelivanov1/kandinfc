@@ -10,51 +10,34 @@ const SignUpScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [displayName, setDisplayName] = useState('');
     const navigation = useNavigation<any>();
 
     const handleSignUp = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
+        if (!email || !password || !displayName.trim()) {
+            Alert.alert('Error', 'Please enter email, password, and display name');
             return;
         }
 
         try {
             setLoading(true);
-            // create user in firebase auth
             const userCredential = await auth().createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
-
-
-            // const addNewDocument = async () => {
-            //     try {
-            //         const docRef = await firestore().collection('userstest').add({
-            //             field1: 'value1',
-            //             field2: 'value2',
-            //         });
-            //         Alert.alert('Document written with ID: ', docRef.id);
-            //     } catch (error) {
-            //         Alert.alert('Error adding document: ');
-            //     }
-            // };
-            // addNewDocument();
-
-
-            // 2. Add user to Firestore
-            await firestore().collection('users').doc(user.uid).set({
+            // create user profile in Firestore
+            const userRef = firestore().collection('users').doc(user.uid);
+            await userRef.set({
                 uid: user.uid,
                 email: user.email,
-                displayName: '',
-                // createdAt: firestore.FieldValue.serverTimestamp(),
+                displayName: displayName.trim(),
+                kandis: [],
+                createdAt: firestore.FieldValue.serverTimestamp(),
             });
 
-            console.log('User profile created in Firestore');
-            Alert.alert('Success', 'User profile created!');
+            Alert.alert('Success', 'Account created!');
 
-            //navigate to NFC screen
+            // navigate to NFC screen
             navigation.replace('Nfc');
-
-
         } catch (error: any) {
             console.warn('Sign up error:', error);
             Alert.alert('Sign Up Error', error.message);
@@ -67,6 +50,14 @@ const SignUpScreen = () => {
         <LinearGradient colors={['#00c6ff', '#0072ff']} style={styles.container}>
             <SafeAreaView style={styles.content}>
                 <Text style={styles.title}>Sign Up</Text>
+
+                <TextInput
+                    placeholder="Display Name"
+                    placeholderTextColor="#fffaaa"
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    style={styles.input}
+                />
 
                 <TextInput
                     placeholder="Email"

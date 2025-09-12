@@ -21,23 +21,23 @@ const SignInScreen = () => {
     try {
       setLoading(true);
 
-      // 1️⃣ Sign in with Firebase Auth
+      // sign in with firebase auth
       const userCredential = await auth().signInWithEmailAndPassword(email, password);
       const user = userCredential.user;
 
-      // 2️⃣ Fetch the user document from Firestore
+      // fetch the user document from firestore
       const userDoc = await firestore().collection('users').doc(user.uid).get();
 
-      if (!userDoc.exists) {
-        // This should rarely happen if signup worked
-        Alert.alert('Error', 'No user profile found. Please sign up first.');
-        return;
-      }
+      // if (!userDoc.exists) {
+      //   // this should rarely happen if signup worked
+      //   Alert.alert('Error', 'No user profile found. Please sign up first.');
+      //   return;
+      // }
 
       const userData = userDoc.data();
       console.log('User document:', userData);
 
-      // 3️⃣ Navigate to NFC screen
+      // navigate to NFC screen
       navigation.replace('Nfc');
 
     } catch (error: any) {
