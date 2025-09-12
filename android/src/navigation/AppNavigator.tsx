@@ -8,6 +8,7 @@ import SignInScreen from '../screens/SignInScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import NfcScreen from '../screens/NfcScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import KandiDetailsScreen from '../screens/KandiDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +43,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="SignIn" component={SignInScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="KandiDetails" component={KandiDetailsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
