@@ -1,7 +1,8 @@
 // src/screens/NfcScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, StyleSheet, Button, Alert, Modal, View, TextInput } from 'react-native';
+import { SafeAreaView, Text, StyleSheet, Button, Alert, Modal, View, TextInput, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -17,7 +18,6 @@ const NfcScreen = () => {
     const [isExistingKandi, setIsExistingKandi] = useState(false);
     const navigation = useNavigation<any>();
 
-    // register nfc events on mount
     useEffect(() => {
         NfcManager.start();
 
@@ -26,12 +26,10 @@ const NfcScreen = () => {
             .catch(err => console.warn('NFC tag registration failed', err));
 
         return () => {
-            // unregister to avoid memory leaks
             NfcManager.unregisterTagEvent().catch(() => { });
         };
     }, []);
 
-    // function to read nfc tag when button is pressed
     const readNfcTag = async () => {
         if (isReading) return;
 
@@ -49,12 +47,10 @@ const NfcScreen = () => {
             const doc = await firestore().collection('kandis').doc(id).get();
 
             if (doc.exists()) {
-                // kandi already exists -> navigate to details screen
                 navigation.navigate('KandiDetails', { tagID: id });
                 return;
             }
 
-            // if it doesn't exist, show claim modal for new kandi
             setIsExistingKandi(false);
             setOriginLocation('');
             setModalVisible(true);
@@ -68,8 +64,6 @@ const NfcScreen = () => {
         }
     };
 
-
-    // function to claim a new kandi
     const handleClaimKandi = async () => {
         if (!tagID) return;
         if (!originLocation.trim()) return Alert.alert('Error', 'Please enter the origin location.');
@@ -80,11 +74,10 @@ const NfcScreen = () => {
 
             const kandiRef = firestore().collection('kandis').doc(tagID);
 
-            // create kandi doc with originLocation, creatorId, and history
             await kandiRef.set({
-                originLocation: originLocation,
+                originLocation,
                 creatorId: user.uid,
-                lore: [originLocation], // initial lore array with first entry
+                lore: [originLocation],
                 createdAt: firestore.FieldValue.serverTimestamp(),
                 history: [
                     {
@@ -95,7 +88,6 @@ const NfcScreen = () => {
                 ]
             });
 
-            // add kandi id to user's kandis array
             const userRef = firestore().collection('users').doc(user.uid);
             await userRef.update({
                 kandis: firestore.FieldValue.arrayUnion(tagID)
@@ -110,84 +102,97 @@ const NfcScreen = () => {
         }
     };
 
-    // sign out function
     const handleSignOut = async () => {
         try {
             await auth().signOut();
-            console.log('User signed out');
         } catch (error: any) {
-            console.warn('Sign out error:', error);
             Alert.alert('Error signing out', error.message);
         }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <LinearGradient colors={['#00c6ff', '#0072ff']} style={styles.container}>
+            <SafeAreaView style={styles.content}>
+                <Text style={styles.title}>Kandi NFC App</Text>
 
-            <Button
-                title="Profile"
-                onPress={() => navigation.navigate('Profile')}
-            />
+                <TouchableOpacity style={styles.mainButton} onPress={readNfcTag} disabled={isReading}>
+                    <Text style={styles.buttonText}>{isReading ? 'Scanning...' : 'Scan Kandi'}</Text>
+                </TouchableOpacity>
 
-            <Text style={styles.text}>Kandi NFC App</Text>
+                <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Profile')}>
+                    <Text style={styles.buttonText}>Profile</Text>
+                </TouchableOpacity>
 
-            <Button
-                onPress={readNfcTag}
-                title={isReading ? 'Scanning...' : 'Read NFC Tag'}
-                disabled={isReading}
-            />
+                <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: '#ff5555' }]} onPress={handleSignOut}>
+                    <Text style={styles.buttonText}>Sign Out</Text>
+                </TouchableOpacity>
 
-            <Text style={styles.text}>Tag: {tagID ?? 'No tag scanned'}</Text>
+                <Text style={styles.tagText}>Tag: {tagID ?? 'No tag scanned'}</Text>
 
-            <Button
-                title="Sign Out"
-                onPress={handleSignOut}
-                color="#ff5555"
-            />
-
-            {/* modal for claiming or showing existing kandi */}
-            <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        {isExistingKandi ? (
-                            <>
-                                <Text style={styles.modalTitle}>This kandi is already claimed!</Text>
-                                <Text style={{ marginBottom: 15 }}>Origin: {originLocation}</Text>
-                                <Button title="OK" onPress={() => setModalVisible(false)} />
-                            </>
-                        ) : (
-                            <>
-                                <Text style={styles.modalTitle}>New kandi found!</Text>
-                                <TextInput
-                                    placeholder="Enter origin location"
-                                    placeholderTextColor="#aaa"
-                                    style={styles.input}
-                                    value={originLocation}
-                                    onChangeText={setOriginLocation}
-                                />
-                                <Button title="Claim Kandi" onPress={handleClaimKandi} />
-                                <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
-                            </>
-                        )}
+                <Modal visible={modalVisible} transparent animationType="slide">
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            {isExistingKandi ? (
+                                <>
+                                    <Text style={styles.modalTitle}>This kandi is already claimed!</Text>
+                                    <Text style={styles.modalInfo}>Origin: {originLocation}</Text>
+                                    <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+                                        <Text style={styles.buttonText}>OK</Text>
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.modalTitle}>New kandi found!</Text>
+                                    <TextInput
+                                        placeholder="Enter origin location"
+                                        placeholderTextColor="#aaa"
+                                        style={styles.input}
+                                        value={originLocation}
+                                        onChangeText={setOriginLocation}
+                                    />
+                                    <TouchableOpacity style={styles.modalButton} onPress={handleClaimKandi}>
+                                        <Text style={styles.buttonText}>Claim Kandi</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ff5555' }]} onPress={() => setModalVisible(false)}>
+                                        <Text style={styles.buttonText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </View>
                     </View>
-                </View>
-            </Modal>
-        </SafeAreaView>
+                </Modal>
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    container: { flex: 1 },
+    content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000',
+        paddingHorizontal: 20,
     },
-    text: {
-        color: '#00ffcc',
-        fontSize: 24,
-        margin: 10,
+    title: { color: '#fff', fontSize: 36, fontWeight: 'bold', marginBottom: 60 },
+    mainButton: {
+        width: '80%',
+        paddingVertical: 18,
+        backgroundColor: '#ffffff66',
+        borderRadius: 12,
+        alignItems: 'center',
+        marginBottom: 20,
     },
+    secondaryButton: {
+        width: '60%',
+        paddingVertical: 14,
+        backgroundColor: '#ffffff33',
+        borderRadius: 12,
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+    tagText: { color: '#fff', fontSize: 14, marginTop: 50, textAlign: 'center' },
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -195,16 +200,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#00000099',
     },
     modalContent: {
-        width: '80%',
+        width: '85%',
         padding: 20,
-        backgroundColor: '#111',
+        backgroundColor: '#0072ff',
         borderRadius: 12,
         alignItems: 'center',
     },
-    modalTitle: {
-        color: '#00ffcc',
-        fontSize: 20,
-        fontWeight: 'bold',
+    modalTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
+    modalInfo: { color: '#fff', fontSize: 16, marginBottom: 20, textAlign: 'center' },
+    modalButton: {
+        width: '100%',
+        paddingVertical: 14,
+        backgroundColor: '#00c6ff',
+        borderRadius: 10,
+        alignItems: 'center',
         marginBottom: 10,
     },
     input: {
@@ -215,7 +224,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff33',
         color: '#fff',
         fontSize: 16,
-        marginBottom: 10,
+        marginBottom: 15,
     },
 });
 
