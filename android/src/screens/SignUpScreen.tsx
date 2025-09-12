@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SafeAreaView, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 
 const SignUpScreen = () => {
@@ -19,12 +20,43 @@ const SignUpScreen = () => {
 
         try {
             setLoading(true);
-            await auth().createUserWithEmailAndPassword(email, password);
-            console.log('User created');
-            navigation.replace('Nfc'); // replaces the current screen so back button doesn't go back
-            // onAuthStateChanged in AppNavigator will navigate to NfcScreen automatically
+            // create user in firebase auth
+            const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+
+
+
+            // const addNewDocument = async () => {
+            //     try {
+            //         const docRef = await firestore().collection('userstest').add({
+            //             field1: 'value1',
+            //             field2: 'value2',
+            //         });
+            //         Alert.alert('Document written with ID: ', docRef.id);
+            //     } catch (error) {
+            //         Alert.alert('Error adding document: ');
+            //     }
+            // };
+            // addNewDocument();
+
+
+            // 2. Add user to Firestore
+            await firestore().collection('users').doc(user.uid).set({
+                uid: user.uid,
+                email: user.email,
+                displayName: '',
+                // createdAt: firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log('User profile created in Firestore');
+            Alert.alert('Success', 'User profile created!');
+
+            //navigate to NFC screen
+            navigation.replace('Nfc');
+
+
         } catch (error: any) {
-            console.warn(error);
+            console.warn('Sign up error:', error);
             Alert.alert('Sign Up Error', error.message);
         } finally {
             setLoading(false);
@@ -60,7 +92,7 @@ const SignUpScreen = () => {
                     onPress={handleSignUp}
                     disabled={loading}
                 >
-                    <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Sign Up'}</Text>
+                    <Text style={styles.buttonText}>{loading ? 'Signing Up...' : 'Sign Up'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SafeAreaView, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 
 const SignInScreen = () => {
@@ -19,12 +20,28 @@ const SignInScreen = () => {
 
     try {
       setLoading(true);
-      await auth().signInWithEmailAndPassword(email, password);
-      console.log('User signed in');
-      navigation.replace('Nfc'); // replaces the current screen so back button doesn't go back
-      // onAuthStateChanged in AppNavigator will automatically navigate to NfcScreen
+
+      // 1️⃣ Sign in with Firebase Auth
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      // 2️⃣ Fetch the user document from Firestore
+      const userDoc = await firestore().collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        // This should rarely happen if signup worked
+        Alert.alert('Error', 'No user profile found. Please sign up first.');
+        return;
+      }
+
+      const userData = userDoc.data();
+      console.log('User document:', userData);
+
+      // 3️⃣ Navigate to NFC screen
+      navigation.replace('Nfc');
+
     } catch (error: any) {
-      console.warn(error);
+      console.warn('Sign In Error:', error);
       Alert.alert('Sign In Error', error.message);
     } finally {
       setLoading(false);
