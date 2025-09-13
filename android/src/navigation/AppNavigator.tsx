@@ -9,6 +9,7 @@ import SignUpScreen from '../screens/SignUpScreen';
 import NfcScreen from '../screens/NfcScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import KandiDetailsScreen from '../screens/KandiDetailsScreen';
+import AppTabs from './AppTabs';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,8 +33,8 @@ const AppNavigator = () => {
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {user ? (
-                    // User is signed in -> go directly to NFC screen
-                    <Stack.Screen name="Nfc" component={NfcScreen} />
+                    // User is signed in -> go directly to AppTabs screen
+                    <Stack.Screen name="AppTabs" component={AppTabs} />
                 ) : (
                     // User not signed in -> show auth screen first
                     <Stack.Screen name="Auth" component={AuthScreen} />
@@ -42,7 +43,7 @@ const AppNavigator = () => {
                 {/* Secondary screens */}
                 <Stack.Screen name="SignIn" component={SignInScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
-                <Stack.Screen name="Profile" component={ProfileScreen} />
+                {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
                 <Stack.Screen name="KandiDetails" component={KandiDetailsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
