@@ -108,11 +108,6 @@ const NfcScreen = () => {
                         <Text style={styles.scanText}>{isReading ? 'Scanning...' : 'Scan Kandi'}</Text>
                     </TouchableOpacity>
                 </Animated.View>
-
-                {/* Profile button below scan button */}
-                <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
-                    <Text style={styles.profileButtonText}>Profile</Text>
-                </TouchableOpacity>
             </View>
 
             {/* Last scanned tag */}
@@ -177,16 +172,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     scanText: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
-
-    profileButton: {
-        backgroundColor: '#00ccff',
-        paddingVertical: 14,
-        paddingHorizontal: 50,
-        borderRadius: 10,
-        marginTop: 10,
-    },
-    profileButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-
     tagText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#000' },
 
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
