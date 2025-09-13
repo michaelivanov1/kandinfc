@@ -1,6 +1,6 @@
 // src/screens/ProfileScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, Text, TextInput, StyleSheet, TouchableOpacity, Alert, View } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +43,18 @@ const ProfileScreen = () => {
         }
     };
 
+    const handleSignOut = async () => {
+        try {
+            await auth().signOut();
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }], 
+            });
+        } catch (error: any) {
+            Alert.alert('Error signing out', error.message);
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.label}>Email (read-only)</Text>
@@ -64,6 +76,13 @@ const ProfileScreen = () => {
             <TouchableOpacity style={[styles.button, styles.signUpButton]} onPress={() => navigation.goBack()}>
                 <Text style={[styles.buttonText, styles.signUpText]}>Back</Text>
             </TouchableOpacity>
+
+            {/* Sign out button at the bottom */}
+            <View style={styles.signOutContainer}>
+                <TouchableOpacity onPress={handleSignOut}>
+                    <Text style={styles.signOutText}>Sign Out</Text>
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
     );
 };
@@ -97,6 +116,8 @@ const styles = StyleSheet.create({
     signUpText: {
         color: '#000',
     },
+    signOutContainer: { marginTop: 30, alignItems: 'center' },
+    signOutText: { color: '#ff5555', fontSize: 14, fontWeight: '600' },
 });
 
 export default ProfileScreen;
