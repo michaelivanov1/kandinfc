@@ -29,7 +29,10 @@ const SignInScreen = () => {
       const userData = userDoc.data();
       console.log('User document:', userData);
 
-      navigation.replace('Nfc');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AppTabs' }],
+      });
     } catch (error: any) {
       console.warn('Sign In Error:', error);
       Alert.alert('Sign In Error', error.message);

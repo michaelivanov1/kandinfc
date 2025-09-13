@@ -34,7 +34,10 @@ const SignUpScreen = () => {
             });
 
             Alert.alert('Success', 'Account created!');
-            navigation.replace('Nfc');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'AppTabs' }], 
+            });
         } catch (error: any) {
             console.warn('Sign up error:', error);
             Alert.alert('Sign Up Error', error.message);

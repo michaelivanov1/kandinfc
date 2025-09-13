@@ -73,10 +73,6 @@ const ProfileScreen = () => {
                 <Text style={styles.buttonText}>{loading ? 'Saving...' : 'Save'}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.signUpButton]} onPress={() => navigation.goBack()}>
-                <Text style={[styles.buttonText, styles.signUpText]}>Back</Text>
-            </TouchableOpacity>
-
             {/* Sign out button at the bottom */}
             <View style={styles.signOutContainer}>
                 <TouchableOpacity onPress={handleSignOut}>
