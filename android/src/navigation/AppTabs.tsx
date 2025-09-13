@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import NfcScreen from '../screens/NfcScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import HomeScreen from '../screens/HomeScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import ExploreScreen from '../screens/ExploreScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -61,6 +63,21 @@ const AppTabs = () => {
                 }}
             />
 
+            {/* Explore Button Tab */}
+            <Tab.Screen
+                name="Explore"
+                component={ExploreScreen}
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <Icon
+                            name="search"
+                            size={28}
+                            color={focused ? '#000' : '#888'}
+                        />
+                    ),
+                }}
+            />
+
             {/* Scan Button Tab */}
             <Tab.Screen
                 name="Scan"
@@ -84,6 +101,19 @@ const AppTabs = () => {
                     ),
                 }}
             />
+
+            {/* Settings Tab */}
+            <Tab.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <Icon name="settings" color={focused ? '#000' : '#888'} size={28} />
+                    ),
+                    headerShown: false,
+                }}
+            />
+
         </Tab.Navigator>
     );
 };

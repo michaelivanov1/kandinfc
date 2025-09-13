@@ -43,7 +43,7 @@ const AppNavigator = () => {
                 {/* Secondary screens */}
                 <Stack.Screen name="SignIn" component={SignInScreen} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} />
-                {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
+                <Stack.Screen name="Profile" component={ProfileScreen} />
                 <Stack.Screen name="KandiDetails" component={KandiDetailsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
