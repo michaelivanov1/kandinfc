@@ -61,40 +61,42 @@ const ProfileScreen = () => {
                 <Text style={styles.buttonText}>{loading ? 'Saving...' : 'Save'}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.backText}>Back</Text>
+            <TouchableOpacity style={[styles.button, styles.signUpButton]} onPress={() => navigation.goBack()}>
+                <Text style={[styles.buttonText, styles.signUpText]}>Back</Text>
             </TouchableOpacity>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: '#000', justifyContent: 'center' },
-    label: { color: '#00ffcc', fontSize: 16, marginBottom: 5 },
-    value: { color: '#fff', fontSize: 18, marginBottom: 20 },
+    container: { flex: 1, padding: 20, backgroundColor: '#f2f2f2', justifyContent: 'center' },
+    label: { color: '#000', fontSize: 16, marginBottom: 5 },
+    value: { color: '#000', fontSize: 18, marginBottom: 20 },
     input: {
-        backgroundColor: '#111',
-        color: '#fff',
+        backgroundColor: '#fff',
+        color: '#000',
         padding: 12,
         borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#000',
         marginBottom: 20,
     },
     button: {
-        backgroundColor: '#00ffcc',
+        backgroundColor: '#000',
         padding: 16,
         borderRadius: 10,
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 15,
     },
-    buttonText: { color: '#000', fontSize: 16, fontWeight: '600' },
-    backButton: {
-        padding: 16,
-        borderRadius: 10,
-        alignItems: 'center',
-        borderColor: '#00ffcc',
+    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    signUpButton: {
+        backgroundColor: '#fff',
         borderWidth: 1,
+        borderColor: '#000',
     },
-    backText: { color: '#00ffcc', fontSize: 16 },
+    signUpText: {
+        color: '#000',
+    },
 });
 
 export default ProfileScreen;

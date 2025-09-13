@@ -1,8 +1,7 @@
 // src/screens/NfcScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, StyleSheet, Button, Alert, Modal, View, TextInput, TouchableOpacity } from 'react-native';
+import { SafeAreaView, Text, StyleSheet, Alert, Modal, View, TextInput, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -111,19 +110,19 @@ const NfcScreen = () => {
     };
 
     return (
-        <LinearGradient colors={['#00c6ff', '#0072ff']} style={styles.container}>
-            <SafeAreaView style={styles.content}>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
                 <Text style={styles.title}>Kandi NFC App</Text>
 
-                <TouchableOpacity style={styles.mainButton} onPress={readNfcTag} disabled={isReading}>
+                <TouchableOpacity style={styles.button} onPress={readNfcTag} disabled={isReading}>
                     <Text style={styles.buttonText}>{isReading ? 'Scanning...' : 'Scan Kandi'}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Profile')}>
-                    <Text style={styles.buttonText}>Profile</Text>
+                <TouchableOpacity style={[styles.button, styles.signUpButton]} onPress={() => navigation.navigate('Profile')}>
+                    <Text style={[styles.buttonText, styles.signUpText]}>Profile</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: '#ff5555' }]} onPress={handleSignOut}>
+                <TouchableOpacity style={[styles.button, styles.signOutButton]} onPress={handleSignOut}>
                     <Text style={styles.buttonText}>Sign Out</Text>
                 </TouchableOpacity>
 
@@ -153,7 +152,7 @@ const NfcScreen = () => {
                                     <TouchableOpacity style={styles.modalButton} onPress={handleClaimKandi}>
                                         <Text style={styles.buttonText}>Claim Kandi</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ff5555' }]} onPress={() => setModalVisible(false)}>
+                                    <TouchableOpacity style={[styles.modalButton, styles.signOutButton]} onPress={() => setModalVisible(false)}>
                                         <Text style={styles.buttonText}>Cancel</Text>
                                     </TouchableOpacity>
                                 </>
@@ -161,38 +160,45 @@ const NfcScreen = () => {
                         </View>
                     </View>
                 </Modal>
-            </SafeAreaView>
-        </LinearGradient>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: { flex: 1, backgroundColor: '#f2f2f2' },
     content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
     },
-    title: { color: '#fff', fontSize: 36, fontWeight: 'bold', marginBottom: 60 },
-    mainButton: {
-        width: '80%',
-        paddingVertical: 18,
-        backgroundColor: '#ffffff66',
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    secondaryButton: {
-        width: '60%',
-        paddingVertical: 14,
-        backgroundColor: '#ffffff33',
-        borderRadius: 12,
+    title: { fontSize: 36, fontWeight: 'bold', color: '#000', marginBottom: 60, textAlign: 'center' },
+    button: {
+        width: '85%',
+        paddingVertical: 12,
+        backgroundColor: '#000',
+        borderRadius: 8,
         alignItems: 'center',
         marginBottom: 15,
     },
-    buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-    tagText: { color: '#fff', fontSize: 14, marginTop: 50, textAlign: 'center' },
+    signUpButton: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#000',
+    },
+    signOutButton: {
+        backgroundColor: '#ff5555',
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    signUpText: {
+        color: '#000',
+    },
+    tagText: { color: '#000', fontSize: 14, marginTop: 50, textAlign: 'center' },
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -202,16 +208,16 @@ const styles = StyleSheet.create({
     modalContent: {
         width: '85%',
         padding: 20,
-        backgroundColor: '#0072ff',
+        backgroundColor: '#fff',
         borderRadius: 12,
         alignItems: 'center',
     },
-    modalTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-    modalInfo: { color: '#fff', fontSize: 16, marginBottom: 20, textAlign: 'center' },
+    modalTitle: { color: '#000', fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
+    modalInfo: { color: '#000', fontSize: 16, marginBottom: 20, textAlign: 'center' },
     modalButton: {
         width: '100%',
         paddingVertical: 14,
-        backgroundColor: '#00c6ff',
+        backgroundColor: '#000',
         borderRadius: 10,
         alignItems: 'center',
         marginBottom: 10,
@@ -221,8 +227,8 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 10,
         borderRadius: 8,
-        backgroundColor: '#ffffff33',
-        color: '#fff',
+        backgroundColor: '#f2f2f2',
+        color: '#000',
         fontSize: 16,
         marginBottom: 15,
     },

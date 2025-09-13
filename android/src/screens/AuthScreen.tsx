@@ -1,41 +1,38 @@
 // src/screens/AuthScreen.tsx
 import React from 'react';
-import { SafeAreaView, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { SafeAreaView, Text, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const AuthScreen = () => {
     const navigation = useNavigation<any>();
 
     return (
-        <LinearGradient
-            colors={['#00c6ff', '#0072ff']}
-            style={styles.container}
-        >
-            <SafeAreaView style={styles.content}>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
                 <Text style={styles.title}>Kandi NFC</Text>
 
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => navigation.navigate('SignIn')} // replace with actual sign in screen
+                    onPress={() => navigation.navigate('SignIn')}
                 >
                     <Text style={styles.buttonText}>Sign In</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.button, styles.signUpButton]}
-                    onPress={() => navigation.navigate('SignUp')} // replace with actual sign up screen
+                    onPress={() => navigation.navigate('SignUp')}
                 >
-                    <Text style={styles.buttonText}>Sign Up</Text>
+                    <Text style={[styles.buttonText, styles.signUpText]}>Sign Up</Text>
                 </TouchableOpacity>
-            </SafeAreaView>
-        </LinearGradient>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f2f2f2',
     },
     content: {
         flex: 1,
@@ -44,26 +41,31 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     title: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 80,
+        fontSize: 40,
+        fontWeight: '600',
+        color: '#000',
+        marginBottom: 60,
     },
     button: {
-        width: '80%',
-        paddingVertical: 16,
-        backgroundColor: '#ffffff33', // semi-transparent white
-        borderRadius: 12,
+        width: '85%',
+        paddingVertical: 12,
+        backgroundColor: '#000',
+        borderRadius: 8,
         alignItems: 'center',
-        marginVertical: 10,
+        marginBottom: 15,
     },
     signUpButton: {
-        backgroundColor: '#ffffff66', // slightly more opaque
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#000',
     },
     buttonText: {
         color: '#fff',
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
+    },
+    signUpText: {
+        color: '#000',
     },
 });
 
