@@ -11,7 +11,11 @@ import {
     View,
     Image,
     ActivityIndicator,
-    ScrollView
+    ScrollView,
+    FlatList,
+    Modal,
+    Platform,
+    PermissionsAndroid
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
@@ -33,8 +37,8 @@ const ProfileScreen = () => {
     const currentUser = auth().currentUser;
     const userId = routeUserId || currentUser?.uid;
 
-    // Show back button if the screen was opened via navigation (scanning a kandi or other user)
     const showBackButton = !!route.params;
+    const isOwnProfile = userId === currentUser?.uid;
 
     const [displayName, setDisplayName] = useState('');
     const [photoURL, setPhotoURL] = useState<string | null>(null);
@@ -42,8 +46,9 @@ const ProfileScreen = () => {
     const [uploading, setUploading] = useState(false);
     const [isEditable, setIsEditable] = useState(false);
     const [editingName, setEditingName] = useState(false);
-    const [lore, setLore] = useState<string[]>([]);
+    const [journey, setJourney] = useState<{ id: string; location: string; photo?: string }[]>([]);
     const [history, setHistory] = useState<any[]>([]);
+    const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
     // Load user data whenever screen focuses
     useFocusEffect(
@@ -51,7 +56,7 @@ const ProfileScreen = () => {
             const loadUser = async () => {
                 if (!userId) return;
 
-                setIsEditable(userId === currentUser?.uid);
+                setIsEditable(isOwnProfile);
 
                 try {
                     // User info
@@ -68,16 +73,24 @@ const ProfileScreen = () => {
                         .where('creatorId', '==', userId)
                         .get();
 
-                    const userLore: string[] = [];
+                    const userJourney: { id: string; location: string; photo?: string }[] = [];
                     const userHistory: any[] = [];
 
                     kandisSnapshot.forEach(doc => {
                         const data = doc.data();
-                        if (data.lore) userLore.push(...data.lore);
+                        if (data.journey && data.journey.length) {
+                            data.journey.forEach((j: any) => {
+                                userJourney.push({
+                                    id: doc.id,
+                                    location: j.location,
+                                    photo: j.photo || undefined,
+                                });
+                            });
+                        }
                         if (data.history) userHistory.push(...data.history);
                     });
 
-                    setLore(userLore);
+                    setJourney(userJourney);
                     setHistory(userHistory);
                 } catch (err) {
                     console.warn('Error loading profile:', err);
@@ -89,35 +102,91 @@ const ProfileScreen = () => {
         }, [userId])
     );
 
-    const pickAndUploadImage = async () => {
+    // ======== Profile Photo Handlers ========
+    const pickOrTakeProfilePhoto = () => {
         if (!isEditable) return;
+        setPhotoModalVisible(true);
+    };
+
+    const requestCameraPermission = async (): Promise<boolean> => {
+        if (Platform.OS === 'android') {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.CAMERA,
+                {
+                    title: 'Camera Permission',
+                    message: 'We need access to your camera to take a profile photo.',
+                    buttonNeutral: 'Ask Me Later',
+                    buttonNegative: 'Cancel',
+                    buttonPositive: 'OK',
+                }
+            );
+            return granted === PermissionsAndroid.RESULTS.GRANTED;
+        }
+        return true;
+    };
+
+    const takeProfilePhoto = async () => {
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+            Alert.alert('Permission denied', 'Camera access is required to take a photo.');
+            return;
+        }
 
         try {
-            const image = await ImagePicker.openPicker({
+            const image = await ImagePicker.openCamera({
                 width: 400,
                 height: 400,
                 cropping: true,
-                compressImageQuality: 0.8
+                compressImageQuality: 0.8,
             });
-            if (image.path) {
-                setUploading(true);
-                const filePath = image.path.startsWith('file://') ? image.path : `file://${image.path}`;
-                const ref = storage().ref(`profilePhotos/${userId}.jpg`);
-                await ref.putFile(filePath);
-                const url = await ref.getDownloadURL();
-                await firestore().collection('users').doc(userId).update({ profilePhoto: url });
-                setPhotoURL(url);
-            }
+            if (image.path) await uploadProfilePhoto(image.path);
         } catch (err: any) {
             if (err.code !== 'E_PICKER_CANCELLED') {
                 console.warn(err);
                 Alert.alert('Error', err.message);
             }
         } finally {
+            setPhotoModalVisible(false);
+        }
+    };
+
+    const pickProfilePhotoFromGallery = async () => {
+        try {
+            const image = await ImagePicker.openPicker({
+                width: 400,
+                height: 400,
+                cropping: true,
+                compressImageQuality: 0.8,
+            });
+            if (image.path) await uploadProfilePhoto(image.path);
+        } catch (err: any) {
+            if (err.code !== 'E_PICKER_CANCELLED') {
+                console.warn(err);
+                Alert.alert('Error', err.message);
+            }
+        } finally {
+            setPhotoModalVisible(false);
+        }
+    };
+
+    const uploadProfilePhoto = async (filePath: string) => {
+        try {
+            setUploading(true);
+            const path = filePath.startsWith('file://') ? filePath : `file://${filePath}`;
+            const ref = storage().ref(`profilePhotos/${userId}.jpg`);
+            await ref.putFile(path);
+            const url = await ref.getDownloadURL();
+            await firestore().collection('users').doc(userId).update({ profilePhoto: url });
+            setPhotoURL(url);
+        } catch (err) {
+            console.warn(err);
+            Alert.alert('Error', 'Failed to upload profile photo');
+        } finally {
             setUploading(false);
         }
     };
 
+    // ======== Display Name Handlers ========
     const handleSaveName = async () => {
         try {
             setLoading(true);
@@ -131,9 +200,46 @@ const ProfileScreen = () => {
         }
     };
 
+    // ======== Journey Photo ========
+    const pickJourneyPhoto = async (index: number) => {
+        try {
+            const image = await ImagePicker.openPicker({
+                width: 400,
+                height: 400,
+                cropping: true,
+                compressImageQuality: 0.8
+            });
+            if (image.path) {
+                const filePath = image.path.startsWith('file://') ? image.path : `file://${image.path}`;
+                const journeyItem = journey[index];
+                const storageRef = storage().ref(`kandiPhotos/${journeyItem.id}.jpg`);
+                await storageRef.putFile(filePath);
+                const url = await storageRef.getDownloadURL();
+
+                const kandiRef = firestore().collection('kandis').doc(journeyItem.id);
+                const kandiDoc = await kandiRef.get();
+                if (kandiDoc.exists()) {
+                    const data = kandiDoc.data();
+                    const updatedJourney = data?.journey.map((j: any) =>
+                        j.location === journeyItem.location ? { ...j, photo: url } : j
+                    );
+                    await kandiRef.update({ journey: updatedJourney });
+                }
+
+                const newJourney = [...journey];
+                newJourney[index].photo = url;
+                setJourney(newJourney);
+            }
+        } catch (err: any) {
+            if (err.code !== 'E_PICKER_CANCELLED') {
+                console.warn(err);
+                Alert.alert('Error', err.message);
+            }
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container}>
-            {/* Back button only if screen opened via navigation */}
             {showBackButton && (
                 <View style={[styles.headerContainer, { marginTop: insets.top + 10 }]}>
                     <TouchableOpacity
@@ -147,7 +253,7 @@ const ProfileScreen = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {/* Profile Photo */}
-                <TouchableOpacity onPress={pickAndUploadImage} disabled={!isEditable}>
+                <TouchableOpacity onPress={pickOrTakeProfilePhoto} disabled={!isEditable}>
                     {uploading ? (
                         <View style={[styles.profilePhoto, styles.loadingPhoto]}>
                             <ActivityIndicator size="large" color="#fff" />
@@ -187,20 +293,53 @@ const ProfileScreen = () => {
                     )}
                 </View>
 
-                {/* Lore */}
-                <Text style={styles.sectionTitle}>Lore</Text>
-                {lore.length ? lore.map((l, i) => (
-                    <Text key={i} style={styles.itemText}>{i + 1}. {l}</Text>
-                )) : <Text style={styles.emptyText}>No lore yet</Text>}
-
-                {/* History */}
-                <Text style={styles.sectionTitle}>History</Text>
-                {history.length ? history.map((h, i) => (
-                    <Text key={i} style={styles.itemText}>
-                        {h.action} at {h.timestamp?.toDate().toLocaleString()}
-                    </Text>
-                )) : <Text style={styles.emptyText}>No history yet</Text>}
+                {/* Journey */}
+                <Text style={styles.sectionTitle}>{isOwnProfile ? 'Your Kandi:' : 'Their Kandi:'}</Text>
+                {journey.filter(j => j.location).length ? (
+                    <FlatList
+                        data={journey.filter(j => j.location)}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        keyExtractor={(item, index) => index.toString()}
+                        contentContainerStyle={{ paddingVertical: 10 }}
+                        renderItem={({ item, index }) => (
+                            <View style={styles.journeyCard}>
+                                <Text style={styles.journeyTitle}>{item.location}</Text>
+                                <TouchableOpacity onPress={() => isEditable && pickJourneyPhoto(index)}>
+                                    <Image
+                                        source={
+                                            item.photo
+                                                ? { uri: item.photo }
+                                                : require('../assets/add-kandi-image.png')
+                                        }
+                                        style={styles.journeyPhoto}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    />
+                ) : (
+                    <Text style={styles.emptyText}>No kandi yet! scan a kandi to get started</Text>
+                )}
             </ScrollView>
+
+            {/* Profile Photo Modal */}
+            <Modal visible={photoModalVisible} transparent animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Update Profile Photo</Text>
+                        <TouchableOpacity style={styles.modalButton} onPress={takeProfilePhoto}>
+                            <Text style={styles.buttonText}>Take Photo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalButton} onPress={pickProfilePhotoFromGallery}>
+                            <Text style={styles.buttonText}>Choose from Gallery</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#888' }]} onPress={() => setPhotoModalVisible(false)}>
+                            <Text style={styles.buttonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -216,7 +355,6 @@ const styles = StyleSheet.create({
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
     nameInput: { fontSize: 16, color: '#000', paddingVertical: 2, paddingRight: 10, minWidth: 120 },
     sectionTitle: { fontSize: 14, fontWeight: '600', color: '#333', alignSelf: 'flex-start', marginTop: 16 },
-    itemText: { fontSize: 13, color: '#444', alignSelf: 'flex-start', marginBottom: 4 },
     emptyText: { fontSize: 13, color: '#999', alignSelf: 'flex-start', fontStyle: 'italic' },
     headerContainer: {
         width: '100%',
@@ -236,6 +374,36 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    journeyCard: {
+        width: 200,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 12,
+        marginRight: 12,
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 2,
+        alignItems: 'center',
+    },
+    journeyTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 8,
+        color: '#333',
+        textAlign: 'center',
+    },
+    journeyPhoto: {
+        width: 160,
+        height: 160,
+        borderRadius: 12,
+    },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
+    modalContent: { width: '85%', padding: 20, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center' },
+    modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15 },
+    modalButton: { width: '100%', paddingVertical: 14, backgroundColor: '#000', borderRadius: 10, alignItems: 'center', marginBottom: 10 },
+    buttonText: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
 });
 
 export default ProfileScreen;

@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, StyleSheet, Alert, Modal, View, TextInput, TouchableOpacity, Animated, Easing } from 'react-native';
+import { SafeAreaView, Text, StyleSheet, Alert, Modal, View, TextInput, TouchableOpacity, Animated, Easing, Image, Platform, PermissionsAndroid } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import ImagePicker from 'react-native-image-crop-picker';
 
-// initialize nfc manager once
 NfcManager.start();
 
 const NfcScreen = () => {
     const [tagID, setTagID] = useState<string | null>(null);
     const [isReading, setIsReading] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
+    const [locationModalVisible, setLocationModalVisible] = useState(false);
+    const [photoModalVisible, setPhotoModalVisible] = useState(false);
     const [originLocation, setOriginLocation] = useState('');
-    const [isExistingKandi, setIsExistingKandi] = useState(false);
+    const [photo, setPhoto] = useState<string | null>(null);
     const navigation = useNavigation<any>();
 
     const pulse = useRef(new Animated.Value(1)).current;
 
-    // Pulse animation for scan button
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -29,11 +30,7 @@ const NfcScreen = () => {
     }, []);
 
     useEffect(() => {
-        NfcManager.start();
-        NfcManager.registerTagEvent()
-            .then(() => console.log('NFC tag event registered'))
-            .catch(err => console.warn('NFC tag registration failed', err));
-
+        NfcManager.registerTagEvent().catch(err => console.warn('NFC registration failed', err));
         return () => { NfcManager.unregisterTagEvent().catch(() => { }); };
     }, []);
 
@@ -55,9 +52,9 @@ const NfcScreen = () => {
                 return;
             }
 
-            setIsExistingKandi(false);
             setOriginLocation('');
-            setModalVisible(true);
+            setPhoto(null);
+            setLocationModalVisible(true); // show first modal
         } catch (ex) {
             console.warn('NFC error', ex);
             Alert.alert('NFC Error', ex?.toString());
@@ -67,19 +64,71 @@ const NfcScreen = () => {
         }
     };
 
+    const handleLocationNext = () => {
+        if (!originLocation.trim()) return Alert.alert('Error', 'Please enter the origin location.');
+        setLocationModalVisible(false);
+        setPhotoModalVisible(true); // open photo modal
+    };
+
+    const requestCameraPermission = async () => {
+        if (Platform.OS === 'android') {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.CAMERA,
+                {
+                    title: 'Camera Permission',
+                    message: 'We need access to your camera to take a photo for your kandi journey.',
+                    buttonNeutral: 'Ask Me Later',
+                    buttonNegative: 'Cancel',
+                    buttonPositive: 'OK',
+                }
+            );
+            return granted === PermissionsAndroid.RESULTS.GRANTED;
+        }
+        return true; // iOS handled by ImagePicker automatically
+    };
+
+    const handleTakePhoto = async () => {
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+            Alert.alert('Permission denied', 'Camera access is required to take a photo.');
+            return;
+        }
+
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 400,
+                height: 400,
+                cropping: true,
+                compressImageQuality: 0.8,
+            });
+            if (image.path) setPhoto(image.path);
+        } catch (err: any) {
+            if (err.code !== 'E_PICKER_CANCELLED') {
+                console.warn(err);
+                Alert.alert('Error', err.message);
+            }
+        }
+    };
+
     const handleClaimKandi = async () => {
         if (!tagID) return;
-        if (!originLocation.trim()) return Alert.alert('Error', 'Please enter the origin location.');
-
         try {
             const user = auth().currentUser;
             if (!user) return Alert.alert('Error', 'You must be signed in to claim a kandi.');
 
             const kandiRef = firestore().collection('kandis').doc(tagID);
+            let photoURL: string | null = null;
+
+            if (photo) {
+                const ref = storage().ref(`kandiPhotos/${tagID}_${Date.now()}.jpg`);
+                await ref.putFile(photo.startsWith('file://') ? photo : `file://${photo}`);
+                photoURL = await ref.getDownloadURL();
+            }
+
             await kandiRef.set({
                 originLocation,
                 creatorId: user.uid,
-                lore: [originLocation],
+                journey: [{ location: originLocation, photo: photoURL }],
                 createdAt: firestore.FieldValue.serverTimestamp(),
                 history: [{ userId: user.uid, action: 'claimed', timestamp: firestore.Timestamp.now() }],
             });
@@ -88,8 +137,9 @@ const NfcScreen = () => {
             await userRef.update({ kandis: firestore.FieldValue.arrayUnion(tagID) });
 
             Alert.alert('Success', 'Kandi claimed and added to your profile!');
-            setModalVisible(false);
+            setPhotoModalVisible(false);
             setOriginLocation('');
+            setPhoto(null);
         } catch (err: any) {
             console.warn('Failed to claim kandi:', err);
             Alert.alert('Error', err.message ?? 'Could not claim kandi.');
@@ -98,10 +148,7 @@ const NfcScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
             <Text style={styles.title}>Kandi NFC</Text>
-
-            {/* Center pulsing scan button */}
             <View style={styles.center}>
                 <Animated.View style={[styles.scanButtonWrapper, { transform: [{ scale: pulse }] }]}>
                     <TouchableOpacity style={styles.scanButton} onPress={readNfcTag} disabled={isReading}>
@@ -109,43 +156,59 @@ const NfcScreen = () => {
                     </TouchableOpacity>
                 </Animated.View>
             </View>
-
-            {/* Last scanned tag */}
             {tagID && <Text style={styles.tagText}>Last tag: {tagID}</Text>}
 
-            {/* Modal */}
-            <Modal visible={modalVisible} transparent animationType="slide">
+            {/* Location Modal */}
+            <Modal visible={locationModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        {isExistingKandi ? (
-                            <>
-                                <Text style={styles.modalTitle}>This kandi is already claimed!</Text>
-                                <Text style={styles.modalInfo}>Origin: {originLocation}</Text>
-                                <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
-                                    <Text style={styles.buttonText}>OK</Text>
-                                </TouchableOpacity>
-                            </>
-                        ) : (
-                            <>
-                                <Text style={styles.modalTitle}>New kandi found!</Text>
-                                <TextInput
-                                    placeholder="Enter origin location"
-                                    placeholderTextColor="#aaa"
-                                    style={styles.input}
-                                    value={originLocation}
-                                    onChangeText={setOriginLocation}
-                                />
-                                <TouchableOpacity style={styles.modalButton} onPress={handleClaimKandi}>
-                                    <Text style={styles.buttonText}>Claim Kandi</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ff5555' }]} onPress={() => setModalVisible(false)}>
-                                    <Text style={styles.buttonText}>Cancel</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
+                        <Text style={styles.modalTitle}>New kandi found!</Text>
+                        <TextInput
+                            placeholder="Enter origin location"
+                            placeholderTextColor="#aaa"
+                            style={styles.input}
+                            value={originLocation}
+                            onChangeText={setOriginLocation}
+                        />
+                        <TouchableOpacity style={styles.modalButton} onPress={handleLocationNext}>
+                            <Text style={styles.buttonText}>Next</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ff5555' }]} onPress={() => setLocationModalVisible(false)}>
+                            <Text style={styles.buttonText}>Cancel</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
+
+            {/* Photo Modal */}
+            <Modal visible={photoModalVisible} transparent animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Add a photo (optional)</Text>
+                        {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
+
+                        {!photo ? (
+                            <TouchableOpacity style={styles.modalButton} onPress={handleTakePhoto}>
+                                <Text style={styles.buttonText}>Take Photo</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <>
+                                <TouchableOpacity style={styles.modalButton} onPress={handleClaimKandi}>
+                                    <Text style={styles.buttonText}>Add Photo</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#888' }]} onPress={handleTakePhoto}>
+                                    <Text style={styles.buttonText}>Retake Photo</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#555' }]} onPress={handleClaimKandi}>
+                            <Text style={styles.buttonText}>Skip / Add Later</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 };
@@ -173,11 +236,9 @@ const styles = StyleSheet.create({
     },
     scanText: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
     tagText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#000' },
-
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
     modalContent: { width: '85%', padding: 20, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center' },
     modalTitle: { color: '#000', fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-    modalInfo: { color: '#000', fontSize: 16, marginBottom: 20, textAlign: 'center' },
     modalButton: { width: '100%', paddingVertical: 14, backgroundColor: '#000', borderRadius: 10, alignItems: 'center', marginBottom: 10 },
     input: { width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#f2f2f2', color: '#000', fontSize: 16, marginBottom: 15 },
     buttonText: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
