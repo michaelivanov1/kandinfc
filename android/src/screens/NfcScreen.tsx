@@ -116,6 +116,10 @@ const NfcScreen = () => {
             const user = auth().currentUser;
             if (!user) return Alert.alert('Error', 'You must be signed in to claim a kandi.');
 
+            // fetch displayName from Firestore
+            const userDoc = await firestore().collection('users').doc(user.uid).get();
+            const displayName = userDoc.data()?.displayName || 'Unknown';
+
             const kandiRef = firestore().collection('kandis').doc(tagID);
             let photoURL: string | null = null;
 
@@ -130,7 +134,13 @@ const NfcScreen = () => {
                 creatorId: user.uid,
                 journey: [{ location: originLocation, photo: photoURL }],
                 createdAt: firestore.FieldValue.serverTimestamp(),
-                history: [{ userId: user.uid, action: 'claimed', timestamp: firestore.Timestamp.now() }],
+                history: [{
+                    userId: user.uid,
+                    displayName,
+                    action: 'claimed',
+                    timestamp: firestore.Timestamp.now(),
+                    photo: photoURL
+                }],
             });
 
             const userRef = firestore().collection('users').doc(user.uid);
@@ -145,6 +155,7 @@ const NfcScreen = () => {
             Alert.alert('Error', err.message ?? 'Could not claim kandi.');
         }
     };
+
 
     return (
         <SafeAreaView style={styles.container}>
