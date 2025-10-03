@@ -301,12 +301,15 @@ const KandiDetailsScreen = () => {
     if (loading) return <SafeAreaView style={styles.center}><Text>Loading...</Text></SafeAreaView>;
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+            {/* Back Arrow – absolute so always clickable */}
+            <View style={{ position: 'absolute', top: 40, left: 20, zIndex: 10 }}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={28} color="#000" />
                 </TouchableOpacity>
+            </View>
 
+            <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 100 }}>
                 <Text style={styles.title}>Kandi Details</Text>
 
                 <View style={styles.creatorContainer}>
@@ -337,14 +340,9 @@ const KandiDetailsScreen = () => {
                     </>
                 )}
 
-                {/* Hide Adopt button if current user is creator */}
-                {currentUser?.uid !== kandiData.creatorId && (
-                    <TouchableOpacity style={styles.adoptButton} onPress={handleAdoptKandi}>
-                        <Text style={styles.adoptText}>Adopt Kandi</Text>
-                    </TouchableOpacity>
-                )}
             </ScrollView>
         </SafeAreaView>
+
     );
 };
 
@@ -361,8 +359,6 @@ const styles = StyleSheet.create({
     journeyLocation: { fontSize: 14, fontWeight: '500', color: '#555' },
     journeyPhoto: { width: '100%', height: 180, borderRadius: 12, marginTop: 4 },
     historyText: { fontSize: 12, color: '#666', marginBottom: 4 },
-    adoptButton: { marginTop: 20, backgroundColor: '#4CAF50', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-    adoptText: { color: '#fff', fontWeight: '600', fontSize: 16 }
 });
 
 export default KandiDetailsScreen;
