@@ -1,23 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, StyleSheet, Alert, Modal, View, TextInput, TouchableOpacity, Animated, Easing, Image, Platform, PermissionsAndroid } from 'react-native';
+import {
+    SafeAreaView,
+    Text,
+    StyleSheet,
+    Alert,
+    Modal,
+    View,
+    TextInput,
+    TouchableOpacity,
+    Animated,
+    Easing,
+    Image,
+    Platform,
+    PermissionsAndroid,
+    ScrollView
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import ImagePicker from 'react-native-image-crop-picker';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 NfcManager.start();
 
 const NfcScreen = () => {
+    const navigation = useNavigation<any>();
     const [tagID, setTagID] = useState<string | null>(null);
     const [isReading, setIsReading] = useState(false);
     const [locationModalVisible, setLocationModalVisible] = useState(false);
     const [photoModalVisible, setPhotoModalVisible] = useState(false);
     const [originLocation, setOriginLocation] = useState('');
     const [photo, setPhoto] = useState<string | null>(null);
-    const navigation = useNavigation<any>();
+    const [isAdopting, setIsAdopting] = useState(false);
 
+    const currentUser = auth().currentUser;
     const pulse = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -47,14 +65,26 @@ const NfcScreen = () => {
             if (!id) return;
 
             const doc = await firestore().collection('kandis').doc(id).get();
-            if (doc.exists()) {
-                navigation.navigate('KandiDetails', { tagID: id });
-                return;
-            }
 
-            setOriginLocation('');
-            setPhoto(null);
-            setLocationModalVisible(true); // show first modal
+            if (doc.exists()) {
+                const data = doc.data();
+                if (currentUser?.uid === data?.creatorId) {
+                    // Your own kandi → go to details
+                    navigation.navigate('KandiDetails', { tagID: id });
+                    return;
+                }
+                // Someone else's kandi → show adoption modal
+                setIsAdopting(true);
+                setOriginLocation('');
+                setPhoto(null);
+                setLocationModalVisible(true);
+            } else {
+                // New kandi → normal claim flow
+                setIsAdopting(false);
+                setOriginLocation('');
+                setPhoto(null);
+                setLocationModalVisible(true);
+            }
         } catch (ex) {
             console.warn('NFC error', ex);
             Alert.alert('NFC Error', ex?.toString());
@@ -65,9 +95,11 @@ const NfcScreen = () => {
     };
 
     const handleLocationNext = () => {
-        if (!originLocation.trim()) return Alert.alert('Error', 'Please enter the origin location.');
+        if (!originLocation.trim() && !isAdopting) {
+            return Alert.alert('Error', 'Please enter the origin location.');
+        }
         setLocationModalVisible(false);
-        setPhotoModalVisible(true); // open photo modal
+        setPhotoModalVisible(true);
     };
 
     const requestCameraPermission = async () => {
@@ -84,7 +116,7 @@ const NfcScreen = () => {
             );
             return granted === PermissionsAndroid.RESULTS.GRANTED;
         }
-        return true; // iOS handled by ImagePicker automatically
+        return true;
     };
 
     const handleTakePhoto = async () => {
@@ -110,13 +142,12 @@ const NfcScreen = () => {
         }
     };
 
-    const handleClaimKandi = async () => {
+    const handleClaimOrAdoptKandi = async () => {
         if (!tagID) return;
         try {
             const user = auth().currentUser;
-            if (!user) return Alert.alert('Error', 'You must be signed in to claim a kandi.');
+            if (!user) return Alert.alert('Error', 'You must be signed in.');
 
-            // fetch displayName from Firestore
             const userDoc = await firestore().collection('users').doc(user.uid).get();
             const displayName = userDoc.data()?.displayName || 'Unknown';
 
@@ -129,33 +160,51 @@ const NfcScreen = () => {
                 photoURL = await ref.getDownloadURL();
             }
 
-            await kandiRef.set({
-                originLocation,
-                creatorId: user.uid,
-                journey: [{ location: originLocation, photo: photoURL }],
-                createdAt: firestore.FieldValue.serverTimestamp(),
-                history: [{
-                    userId: user.uid,
-                    displayName,
-                    action: 'claimed',
-                    timestamp: firestore.Timestamp.now(),
-                    photo: photoURL
-                }],
+            if (isAdopting) {
+                // Adoption: append to journey & history
+                await kandiRef.update({
+                    journey: firestore.FieldValue.arrayUnion({ location: originLocation, photo: photoURL }),
+                    history: firestore.FieldValue.arrayUnion({
+                        userId: user.uid,
+                        displayName,
+                        action: 'adopted',
+                        timestamp: firestore.Timestamp.now(),
+                        photo: photoURL,
+                        location: originLocation || null
+                    }),
+                });
+            } else {
+                // New kandi: create doc
+                await kandiRef.set({
+                    originLocation,
+                    creatorId: user.uid,
+                    journey: [{ location: originLocation, photo: photoURL }],
+                    createdAt: firestore.FieldValue.serverTimestamp(),
+                    history: [{
+                        userId: user.uid,
+                        displayName,
+                        action: 'claimed',
+                        timestamp: firestore.Timestamp.now(),
+                        photo: photoURL,
+                        location: originLocation
+                    }],
+                });
+            }
+
+            await firestore().collection('users').doc(user.uid).update({
+                kandis: firestore.FieldValue.arrayUnion(tagID),
             });
 
-            const userRef = firestore().collection('users').doc(user.uid);
-            await userRef.update({ kandis: firestore.FieldValue.arrayUnion(tagID) });
-
-            Alert.alert('Success', 'Kandi claimed and added to your profile!');
+            Alert.alert('Success', isAdopting ? 'You adopted this kandi!' : 'Kandi claimed and added to your profile!');
             setPhotoModalVisible(false);
             setOriginLocation('');
             setPhoto(null);
+            setIsAdopting(false);
         } catch (err: any) {
-            console.warn('Failed to claim kandi:', err);
-            Alert.alert('Error', err.message ?? 'Could not claim kandi.');
+            console.warn(err);
+            Alert.alert('Error', err.message ?? 'Could not complete action.');
         }
     };
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -169,22 +218,40 @@ const NfcScreen = () => {
             </View>
             {tagID && <Text style={styles.tagText}>Last tag: {tagID}</Text>}
 
-            {/* Location Modal */}
+            {/* Location / Adoption Modal */}
             <Modal visible={locationModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>New kandi found!</Text>
+                        <Text style={styles.modalTitle}>{isAdopting ? 'Kandi Found!' : 'New kandi found!'}</Text>
+
                         <TextInput
-                            placeholder="Enter origin location"
+                            placeholder={isAdopting ? 'Enter adoption location (optional)' : 'Enter origin location'}
                             placeholderTextColor="#aaa"
                             style={styles.input}
                             value={originLocation}
                             onChangeText={setOriginLocation}
                         />
+
+                        {isAdopting && (
+                            <TouchableOpacity
+                                style={[styles.modalButton, { backgroundColor: '#2196F3' }]}
+                                onPress={() => {
+                                    setLocationModalVisible(false);
+                                    navigation.navigate('KandiDetails', { tagID });
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Show Kandi History</Text>
+                            </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity style={styles.modalButton} onPress={handleLocationNext}>
-                            <Text style={styles.buttonText}>Next</Text>
+                            <Text style={styles.buttonText}>{isAdopting ? 'Adopt Kandi' : 'Next'}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ff5555' }]} onPress={() => setLocationModalVisible(false)}>
+
+                        <TouchableOpacity
+                            style={[styles.modalButton, { backgroundColor: '#ff5555' }]}
+                            onPress={() => setLocationModalVisible(false)}
+                        >
                             <Text style={styles.buttonText}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
@@ -195,7 +262,7 @@ const NfcScreen = () => {
             <Modal visible={photoModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add a photo (optional)</Text>
+                        <Text style={styles.modalTitle}>Add a photo</Text>
                         {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
 
                         {!photo ? (
@@ -204,7 +271,7 @@ const NfcScreen = () => {
                             </TouchableOpacity>
                         ) : (
                             <>
-                                <TouchableOpacity style={styles.modalButton} onPress={handleClaimKandi}>
+                                <TouchableOpacity style={styles.modalButton} onPress={handleClaimOrAdoptKandi}>
                                     <Text style={styles.buttonText}>Add Photo</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#888' }]} onPress={handleTakePhoto}>
@@ -213,13 +280,12 @@ const NfcScreen = () => {
                             </>
                         )}
 
-                        <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#555' }]} onPress={handleClaimKandi}>
+                        {/* <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#555' }]} onPress={handleClaimOrAdoptKandi}>
                             <Text style={styles.buttonText}>Skip / Add Later</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                     </View>
                 </View>
             </Modal>
-
         </SafeAreaView>
     );
 };
