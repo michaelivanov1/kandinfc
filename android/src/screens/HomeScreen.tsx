@@ -1,11 +1,15 @@
 // src/screens/HomeScreen.tsx
 import React from 'react';
-import { SafeAreaView, Text, StyleSheet } from 'react-native';
+import { SafeAreaView, View, StyleSheet } from 'react-native';
+import Text from '../components/Text';
+import { Colors, Spacing } from '../theme';
 
 const HomeScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.text}>Home Coming Soon</Text>
+            <View style={styles.content}>
+                <Text variant="title">Home Coming Soon</Text>
+            </View>
         </SafeAreaView>
     );
 };
@@ -13,14 +17,13 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: Colors.grayLight,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f2f2f2',
     },
-    text: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#000',
+    content: {
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
     },
 });
 

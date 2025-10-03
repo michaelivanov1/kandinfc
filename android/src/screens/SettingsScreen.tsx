@@ -1,7 +1,9 @@
 import React from 'react';
-import { SafeAreaView, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView, StyleSheet, Alert } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import Button from '../components/Button';
+import Text from '../components/Text';
 
 const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -17,17 +19,22 @@ const SettingsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TouchableOpacity style={styles.button} onPress={handleSignOut}>
-                <Text style={styles.buttonText}>Sign Out</Text>
-            </TouchableOpacity>
+            <Text variant="title" style={{ marginBottom: 30 }}>
+                Settings
+            </Text>
+            <Button title="Sign Out" onPress={handleSignOut} variant="primary" />
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f2f2f2' },
-    button: { backgroundColor: '#ff5555', padding: 16, borderRadius: 10 },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8f8f8',
+        padding: 20,
+    },
 });
 
 export default SettingsScreen;

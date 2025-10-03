@@ -1,23 +1,39 @@
 // src/screens/ExploreScreen.tsx
 import React from 'react';
-import { SafeAreaView, Text, StyleSheet, View } from 'react-native';
+import { SafeAreaView, View, StyleSheet } from 'react-native';
+import Text from '../components/Text';
+import { Colors, Spacing } from '../theme';
 
 const ExploreScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <Text style={styles.title}>Explore</Text>
-                <Text style={styles.subtitle}>eventually..</Text>
+                <Text variant="title" style={styles.title}>Explore</Text>
+                <Text variant="section" color="muted" style={styles.subtitle}>
+                    eventually..
+                </Text>
             </View>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f2f2f2', justifyContent: 'center', alignItems: 'center' },
-    content: { alignItems: 'center', padding: 20 },
-    title: { fontSize: 28, fontWeight: 'bold', color: '#000', marginBottom: 10 },
-    subtitle: { fontSize: 16, color: '#555', textAlign: 'center' },
+    container: {
+        flex: 1,
+        backgroundColor: Colors.grayLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    content: {
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+    },
+    title: {
+        marginBottom: Spacing.sm,
+    },
+    subtitle: {
+        textAlign: 'center',
+    },
 });
 
 export default ExploreScreen;
