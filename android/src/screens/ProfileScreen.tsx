@@ -423,11 +423,11 @@ import {
     View,
     Image,
     ActivityIndicator,
-    ScrollView,
     FlatList,
     Modal,
     Platform,
-    PermissionsAndroid
+    PermissionsAndroid,
+    Dimensions
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
@@ -435,6 +435,7 @@ import storage from '@react-native-firebase/storage';
 import ImagePicker from 'react-native-image-crop-picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+const screenWidth = Dimensions.get('window').width;
 
 interface RouteParams { userId?: string; }
 
@@ -471,6 +472,10 @@ const ProfileScreen = () => {
     const [kandis, setKandis] = useState<KandiItem[]>([]);
     const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
+    // Timeline modal
+    const [timelineVisible, setTimelineVisible] = useState(false);
+    const [selectedKandi, setSelectedKandi] = useState<KandiItem | null>(null);
+
     const formatTimestamp = (ts: any) => {
         if (!ts) return '';
         if (ts.toDate) return ts.toDate().toLocaleString();
@@ -483,14 +488,12 @@ const ProfileScreen = () => {
         const loadUserData = async () => {
             if (!userId) return;
             try {
-                // User info
                 const userDoc = await firestore().collection('users').doc(userId).get();
                 if (userDoc.exists()) {
                     const data = userDoc.data();
                     setDisplayName(data?.displayName || '');
                     setPhotoURL(data?.profilePhoto || null);
 
-                    // Load kandis from user's kandi array
                     const kandiIds: string[] = data?.kandis || [];
                     const loadedKandis: KandiItem[] = [];
 
@@ -587,77 +590,48 @@ const ProfileScreen = () => {
         } finally { setLoading(false); }
     };
 
-    // ===== Journey Photo =====
-    const pickJourneyPhoto = async (index: number) => {
-        try {
-            const image = await ImagePicker.openCamera({ width: 400, height: 400, cropping: true, compressImageQuality: 0.8 });
-            if (!image.path) return;
+    // ===== Header Component for FlatList =====
+    const renderHeader = () => (
+        <View style={{ alignItems: 'center', padding: 20 }}>
+            <TouchableOpacity onPress={pickOrTakeProfilePhoto} disabled={!isOwnProfile}>
+                {uploading ? (
+                    <View style={[styles.profilePhoto, styles.loadingPhoto]}>
+                        <ActivityIndicator size="large" color="#fff" />
+                    </View>
+                ) : (
+                    <Image
+                        source={photoURL ? { uri: photoURL } : require('../assets/default-profile.png')}
+                        style={styles.profilePhoto}
+                    />
+                )}
+            </TouchableOpacity>
 
-            const filePath = image.path.startsWith('file://') ? image.path : `file://${image.path}`;
-            const journeyItem = kandis[index];
-
-            const storageRef = storage().ref(`kandiPhotos/${journeyItem.id}_${currentUser?.uid}.jpg`);
-            await storageRef.putFile(filePath);
-            const url = await storageRef.getDownloadURL();
-
-            // Update Firestore journey photo
-            const kandiRef = firestore().collection('kandis').doc(journeyItem.id);
-            const kandiDoc = await kandiRef.get();
-            if (kandiDoc.exists()) {
-                const data = kandiDoc.data();
-                const updatedJourney = data?.journey.map((j: any) =>
-                    j.location === journeyItem.journey[0].location ? { ...j, photo: url } : j
-                );
-                await kandiRef.update({ journey: updatedJourney });
-            }
-
-            const updatedList = [...kandis];
-            updatedList[index].journey[0].photo = url;
-            setKandis(updatedList);
-
-        } catch (err: any) {
-            if (err.code !== 'E_PICKER_CANCELLED') Alert.alert('Error', err.message);
-        }
-    };
-
-    // ===== Render Kandi Section =====
-    const renderKandiSection = (title: string, kandisList: KandiItem[]) => (
-        <>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            {kandisList.length ? (
-                <FlatList
-                    data={kandisList}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingVertical: 10 }}
-                    renderItem={({ item, index }) => (
-                        <View style={styles.journeyCard}>
-                            <Text style={styles.journeyTitle}>{item.journey[0]?.location || 'Unknown'}</Text>
-                            <TouchableOpacity onPress={() => isOwnProfile && pickJourneyPhoto(index)}>
-                                <Image
-                                    source={item.journey[0]?.photo ? { uri: item.journey[0].photo } : require('../assets/add-kandi-image.png')}
-                                    style={styles.journeyPhoto}
-                                />
+            <View style={styles.nameContainer}>
+                {editingName ? (
+                    <View style={styles.editNameContainer}>
+                        <TextInput
+                            style={styles.nameInput}
+                            value={displayName}
+                            onChangeText={setDisplayName}
+                            autoFocus
+                            onSubmitEditing={handleSaveName}
+                        />
+                        <TouchableOpacity onPress={handleSaveName} disabled={loading}>
+                            <Icon name="check" size={20} color="#000" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View style={styles.nameDisplayContainer}>
+                        <Text style={styles.displayName}>{displayName || 'Unnamed User'}</Text>
+                        {isOwnProfile && (
+                            <TouchableOpacity onPress={() => setEditingName(true)}>
+                                <Icon name="edit" size={18} color="#555" style={{ marginLeft: 6 }} />
                             </TouchableOpacity>
-
-                            {item.history && item.history.length > 0 && (
-                                <View style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                                    <Text style={{ fontSize: 12, color: '#666', fontWeight: '600' }}>Ownership Timeline:</Text>
-                                    {item.history.slice().reverse().map((h, idx) => (
-                                        <Text key={idx} style={{ fontSize: 11, color: '#999' }}>
-                                            {h.displayName} {h.action} at {item.journey[0]?.location || 'unknown '}on {formatTimestamp(h.timestamp)}
-                                        </Text>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                    )}
-                />
-            ) : (
-                <Text style={styles.emptyText}>No kandi here yet!</Text>
-            )}
-        </>
+                        )}
+                    </View>
+                )}
+            </View>
+        </View>
     );
 
     return (
@@ -670,49 +644,31 @@ const ProfileScreen = () => {
                 </View>
             )}
 
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <TouchableOpacity onPress={pickOrTakeProfilePhoto} disabled={!isOwnProfile}>
-                    {uploading ? (
-                        <View style={[styles.profilePhoto, styles.loadingPhoto]}>
-                            <ActivityIndicator size="large" color="#fff" />
-                        </View>
-                    ) : (
-                        <Image
-                            source={photoURL ? { uri: photoURL } : require('../assets/default-profile.png')}
-                            style={styles.profilePhoto}
-                        />
-                    )}
-                </TouchableOpacity>
-
-                <View style={styles.nameContainer}>
-                    {editingName ? (
-                        <View style={styles.editNameContainer}>
-                            <TextInput
-                                style={styles.nameInput}
-                                value={displayName}
-                                onChangeText={setDisplayName}
-                                autoFocus
-                                onSubmitEditing={handleSaveName}
+            <FlatList
+                data={kandis}
+                keyExtractor={(item) => item.id}
+                numColumns={3}
+                ListHeaderComponent={renderHeader}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                ListEmptyComponent={<Text style={styles.emptyText}>No kandi here yet!</Text>}
+                renderItem={({ item }) => {
+                    const latestJourney = item.journey[item.journey.length - 1];
+                    return (
+                        <TouchableOpacity
+                            style={styles.kandiSquare}
+                            onPress={() => { setSelectedKandi(item); setTimelineVisible(true); }}
+                        >
+                            <Image
+                                source={latestJourney?.photo ? { uri: latestJourney.photo } : require('../assets/add-kandi-image.png')}
+                                style={styles.kandiImage}
                             />
-                            <TouchableOpacity onPress={handleSaveName} disabled={loading}>
-                                <Icon name="check" size={20} color="#000" />
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <View style={styles.nameDisplayContainer}>
-                            <Text style={styles.displayName}>{displayName || 'Unnamed User'}</Text>
-                            {isOwnProfile && (
-                                <TouchableOpacity onPress={() => setEditingName(true)}>
-                                    <Icon name="edit" size={18} color="#555" style={{ marginLeft: 6 }} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    )}
-                </View>
+                            <Text style={styles.kandiLabel}>{latestJourney?.location || 'Unknown'}</Text>
+                        </TouchableOpacity>
+                    );
+                }}
+            />
 
-                {renderKandiSection(isOwnProfile ? 'Your Current Kandis:' : 'Their Kandis:', kandis)}
-            </ScrollView>
-
+            {/* Profile Photo Modal */}
             <Modal visible={photoModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
@@ -729,13 +685,41 @@ const ProfileScreen = () => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Timeline Modal */}
+            <Modal visible={timelineVisible} animationType="slide">
+                <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10 }}>
+                        <TouchableOpacity onPress={() => setTimelineVisible(false)}>
+                            <Icon name="close" size={28} color="#000" />
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 18, fontWeight: '600', marginLeft: 10 }}>Kandi Timeline</Text>
+                    </View>
+
+                    <FlatList
+                        data={selectedKandi?.history || []}
+                        keyExtractor={(_, idx) => idx.toString()}
+                        contentContainerStyle={{ padding: 16 }}
+                        renderItem={({ item, index }) => (
+                            <View style={styles.timelineEntry}>
+                                {item.photo && <Image source={{ uri: item.photo }} style={styles.timelinePhoto} />}
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.timelineName}>{item.displayName}</Text>
+                                    <Text style={styles.timelineText}>
+                                        {item.action} at {selectedKandi?.journey[index]?.location || ''} on {formatTimestamp(item.timestamp)}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                    />
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8f8f8' },
-    scrollContainer: { alignItems: 'center', padding: 20 },
     profilePhoto: { width: 100, height: 100, borderRadius: 50, marginTop: 20, marginBottom: 12, backgroundColor: '#ddd' },
     loadingPhoto: { justifyContent: 'center', alignItems: 'center' },
     nameContainer: { alignItems: 'center', marginBottom: 20 },
@@ -743,13 +727,40 @@ const styles = StyleSheet.create({
     displayName: { fontSize: 18, fontWeight: '600', color: '#000' },
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
     nameInput: { fontSize: 16, color: '#000', paddingVertical: 2, paddingRight: 10, minWidth: 120 },
-    sectionTitle: { fontSize: 14, fontWeight: '600', color: '#333', alignSelf: 'flex-start', marginTop: 16 },
-    emptyText: { fontSize: 13, color: '#999', alignSelf: 'flex-start', fontStyle: 'italic' },
+    emptyText: { fontSize: 13, color: '#999', alignSelf: 'center', fontStyle: 'italic', marginTop: 10 },
     headerContainer: { width: '100%', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#f8f8f8', flexDirection: 'row', alignItems: 'center', zIndex: 999 },
     backButton: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-    journeyCard: { width: 200, backgroundColor: '#fff', borderRadius: 12, padding: 12, marginRight: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 2, alignItems: 'center' },
-    journeyTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333', textAlign: 'center' },
-    journeyPhoto: { width: 160, height: 160, borderRadius: 12 },
+
+    // Kandi grid
+    kandiSquare: {
+        width: (screenWidth / 2) - 30, // half screen minus margins
+        height: (screenWidth / 2) - 30,
+        margin: 10,
+        alignItems: 'center',
+        justifyContent: 'center', // center content vertically
+        backgroundColor: 'lightgray',
+        borderRadius: 12,
+    },
+    kandiImage: {
+        width: '80%',
+        height: '60%',
+        borderRadius: 12,
+        backgroundColor: '#eee',
+    },
+    kandiLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 8,
+        color: '#333',
+        textAlign: 'center',
+    },
+
+    // Timeline modal
+    timelineEntry: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+    timelinePhoto: { width: 60, height: 60, borderRadius: 8, marginRight: 12 },
+    timelineName: { fontSize: 14, fontWeight: '600', color: '#000' },
+    timelineText: { fontSize: 12, color: '#555' },
+
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
     modalContent: { width: '85%', padding: 20, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center' },
     modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15 },
@@ -758,6 +769,8 @@ const styles = StyleSheet.create({
 });
 
 export default ProfileScreen;
+
+
 
 
 
