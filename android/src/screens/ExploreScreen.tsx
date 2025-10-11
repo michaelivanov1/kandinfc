@@ -9,7 +9,7 @@ const ExploreScreen = () => {
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <Text variant="title" style={styles.title}>Explore</Text>
-                <Text variant="section" color="muted" style={styles.subtitle}>
+                <Text style={styles.subtitle}>
                     eventually..
                 </Text>
             </View>
@@ -20,7 +20,7 @@ const ExploreScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.grayLight,
+        backgroundColor: Colors.background,
         justifyContent: 'center',
         alignItems: 'center',
     },
