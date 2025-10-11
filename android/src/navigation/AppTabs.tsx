@@ -35,16 +35,13 @@ const AppTabs = () => {
                 headerShown: false,
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    backgroundColor: '#fff',
+                    backgroundColor: '#111',
                     height: 70,
-                    borderTopLeftRadius: 20,
-                    borderTopRightRadius: 20,
+                    paddingTop: 8,
                     position: 'absolute',
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowOffset: { width: 0, height: -3 },
-                    shadowRadius: 5,
-                    elevation: 8,
+                },
+                tabBarItemStyle: {
+                    alignItems: 'center',
                 },
             }}
         >
