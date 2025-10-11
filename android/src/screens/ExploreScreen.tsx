@@ -8,10 +8,7 @@ const ExploreScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <Text variant="title" style={styles.title}>Explore</Text>
-                <Text style={styles.subtitle}>
-                    eventually..
-                </Text>
+                <Text variant="title" style={styles.title}>Explore Coming Soon</Text>
             </View>
         </SafeAreaView>
     );
@@ -30,9 +27,6 @@ const styles = StyleSheet.create({
     },
     title: {
         marginBottom: Spacing.sm,
-    },
-    subtitle: {
-        textAlign: 'center',
     },
 });
 
