@@ -199,7 +199,7 @@ const ProfileScreen = () => {
                     </View>
                 ) : (
                     <View style={styles.nameDisplayContainer}>
-                        <Text style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
+                        <Text variant='title' style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
                         {isOwnProfile && (
                             <TouchableOpacity onPress={() => setEditingName(true)}>
                                 <Icon name="edit" size={18} />
@@ -209,7 +209,7 @@ const ProfileScreen = () => {
                 )}
             </View>
             <View>
-                <Text style={{ color: Colors.mutedText, marginTop: 5, fontSize: 8 }}>
+                <Text style={{ color: Colors.mutedText, marginTop: 8, fontSize: 8 }}>
                     Member since {currentUser?.metadata?.creationTime
                         ? new Date(currentUser.metadata.creationTime).toLocaleString('default', {
                             month: 'short',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     nameContainer: { alignItems: 'center' },
     nameDisplayContainer: { flexDirection: 'row', alignItems: 'center' },
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
-    nameInput: { fontSize: 16, color: '#000', paddingVertical: 2, paddingRight: 10, minWidth: 120 },
+    nameInput: { fontSize: 14, color: Colors.text, paddingVertical: 2, paddingRight: 10, minWidth: 120 },
     emptyText: { fontSize: 13, color: '#999', alignSelf: 'center', fontStyle: 'italic', marginTop: 10 },
     headerContainer: { width: '100%', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#f8f8f8', flexDirection: 'row', alignItems: 'center', zIndex: 999 },
     backButton: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },

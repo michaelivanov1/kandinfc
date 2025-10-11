@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
     },
     input: {
-        width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, fontSize: 8, marginBottom: 15, backgroundColor: '#222222ff'
+        fontSize: FontSizes.textFieldPlaceholder, width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, marginBottom: 15, backgroundColor: '#222222ff'
     },
 });
 

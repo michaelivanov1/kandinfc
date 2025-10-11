@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
         color: Colors.text,
-        fontSize: FontSizes.subtitle,
+        fontSize: FontSizes.textFieldPlaceholder,
         borderWidth: 1,
         borderColor: Colors.border,
     },
