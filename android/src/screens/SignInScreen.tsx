@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SafeAreaView, TextInput, StyleSheet, View, Alert } from 'react-native';
+import { SafeAreaView, View, TextInput, StyleSheet, Alert, Text } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
-import Text from '../components/Text';
+import { Colors, Spacing, FontSizes } from '../theme';
 
 const SignInScreen = () => {
   const [email, setEmail] = useState('');
@@ -41,14 +41,15 @@ const SignInScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text variant="title" style={{ marginBottom: 40 }}>Sign In</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Sign in to your account</Text>
 
-        <View style={styles.inputContainer}>
-          <Text variant="section" style={styles.label}>Email</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email</Text>
           <TextInput
-            placeholder="Enter your email"
-            placeholderTextColor="#555"
+            placeholder="you@example.com"
+            placeholderTextColor={Colors.mutedText}
             value={email}
             onChangeText={setEmail}
             style={styles.input}
@@ -57,11 +58,11 @@ const SignInScreen = () => {
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text variant="section" style={styles.label}>Password</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Password</Text>
           <TextInput
-            placeholder="Enter your password"
-            placeholderTextColor="#555"
+            placeholder="••••••••"
+            placeholderTextColor={Colors.mutedText}
             value={password}
             onChangeText={setPassword}
             style={styles.input}
@@ -72,34 +73,66 @@ const SignInScreen = () => {
         <Button
           title={loading ? 'Signing In...' : 'Sign In'}
           onPress={handleSignIn}
-          variant="primary"
-          style={{ marginBottom: 15 }}
+          style={{ marginTop: Spacing.lg }}
+          disabled={loading}
         />
-
-        <Text variant="body" style={styles.switchText} onPress={() => navigation.navigate('SignUp')}>
-          Don't have an account? <Text style={styles.switchLink}>Sign Up</Text>
-        </Text>
+        <Button
+          variant="ghost"
+          title="Create account"
+          style={{ marginTop: Spacing.md }}
+          onPress={() => navigation.navigate('SignUp')}
+        />
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  inputContainer: { width: '85%', marginBottom: 20 },
-  label: { marginBottom: 6, fontSize: 12 },
-  input: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: '#deddddbf',
-    color: '#000',
-    fontSize: 10,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
   },
-  switchText: { fontSize: 10, color: '#444' },
-  switchLink: { color: '#000', fontSize: 10, fontWeight: 600 },
+  card: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#0a101bff',
+    borderRadius: 12,
+    padding: Spacing.xl,
+  },
+  title: {
+    color: Colors.text,
+    fontSize: FontSizes.title,
+    marginBottom: Spacing.sm,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: Colors.mutedText,
+    fontSize: FontSizes.subtitle,
+    textAlign: 'center',
+    marginBottom: 46
+  },
+  inputGroup: {
+    marginBottom: Spacing.md,
+  },
+  label: {
+    color: Colors.mutedText,
+    fontSize: FontSizes.subtitle,
+    marginBottom: Spacing.md,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    color: Colors.text,
+    fontSize: FontSizes.subtitle,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
 });
 
 export default SignInScreen;

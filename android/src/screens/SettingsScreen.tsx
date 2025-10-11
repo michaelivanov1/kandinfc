@@ -4,6 +4,7 @@ import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
 import Text from '../components/Text';
+import { Colors } from '../theme';
 
 const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -32,7 +33,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f8f8',
+        backgroundColor: Colors.background,
         padding: 20,
     },
 });

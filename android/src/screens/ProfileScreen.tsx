@@ -24,6 +24,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../components/Text';
 import Button from '../components/Button';
+import { Colors, FontSizes } from '../theme';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -198,15 +199,27 @@ const ProfileScreen = () => {
                     </View>
                 ) : (
                     <View style={styles.nameDisplayContainer}>
-                        <Text variant="subtitle" style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
+                        <Text style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
                         {isOwnProfile && (
                             <TouchableOpacity onPress={() => setEditingName(true)}>
-                                <Icon name="edit" size={18} color="#555" />
+                                <Icon name="edit" size={18} />
                             </TouchableOpacity>
                         )}
                     </View>
                 )}
             </View>
+            <View>
+                <Text style={{ color: Colors.mutedText, marginTop: 5, fontSize: 8 }}>
+                    Member since {currentUser?.metadata?.creationTime
+                        ? new Date(currentUser.metadata.creationTime).toLocaleString('default', {
+                            month: 'short',
+                            year: 'numeric',
+                        })
+                        : 'Unknown'}
+                </Text>
+            </View>
+            <View style={{ marginTop: 36, marginBottom: 24, height: 0.5, backgroundColor: Colors.mutedText, width: '100%' }} />
+            <Text style={{ fontSize: FontSizes.subtitle, textAlign: 'left' }}>My Collection</Text>
         </View>
     );
 
@@ -226,22 +239,29 @@ const ProfileScreen = () => {
                 numColumns={3}
                 ListHeaderComponent={renderHeader}
                 contentContainerStyle={{ paddingBottom: 40 }}
-                ListEmptyComponent={<Text variant="small" style={styles.emptyText}>No kandi here yet!</Text>}
+                ListEmptyComponent={<Text variant="subtitle" style={styles.emptyText}>No kandi here yet!</Text>}
                 renderItem={({ item }) => {
                     const latestJourney = item.journey[item.journey.length - 1];
+                    const photoSource = latestJourney?.photo
+                        ? { uri: latestJourney.photo }
+                        : require('../assets/add-kandi-image.png');
+
                     return (
                         <TouchableOpacity
-                            style={styles.kandiSquare}
+                            style={styles.kandiItem}
                             onPress={() => navigation.navigate('KandiDetails', { tagID: item.id })}
+                            activeOpacity={0.8}
                         >
-                            <Image
-                                source={latestJourney?.photo ? { uri: latestJourney.photo } : require('../assets/add-kandi-image.png')}
-                                style={styles.kandiImage}
-                            />
-                            <Text style={styles.kandiLabel}>{latestJourney?.location || 'Unknown'}</Text>
+                            <Image source={photoSource} style={styles.kandiImage} />
+                            <View style={styles.kandiOverlay}>
+                                <Text style={styles.kandiLocation}>
+                                    {latestJourney?.location || 'Unknown'}
+                                </Text>
+                            </View>
                         </TouchableOpacity>
                     );
                 }}
+
 
             />
 
@@ -261,10 +281,10 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f8f8f8' },
-    profilePhoto: { width: 100, height: 100, borderRadius: 50, marginTop: 20, marginBottom: 12, backgroundColor: '#ddd' },
+    container: { flex: 1, backgroundColor: Colors.background, paddingTop: 60 },
+    profilePhoto: { width: 100, height: 100, borderRadius: 50, marginBottom: 12, backgroundColor: '#ddd' },
     loadingPhoto: { justifyContent: 'center', alignItems: 'center' },
-    nameContainer: { alignItems: 'center', marginBottom: 20 },
+    nameContainer: { alignItems: 'center' },
     nameDisplayContainer: { flexDirection: 'row', alignItems: 'center' },
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
     nameInput: { fontSize: 16, color: '#000', paddingVertical: 2, paddingRight: 10, minWidth: 120 },
@@ -281,16 +301,39 @@ const styles = StyleSheet.create({
         backgroundColor: 'lightgray',
         borderRadius: 12,
     },
-    kandiImage: {
-        width: '80%',
-        height: '60%',
-        borderRadius: 12,
-        backgroundColor: '#eee',
-    },
     kandiLabel: { fontSize: 14, fontWeight: '600', marginTop: 8, color: '#333', textAlign: 'center' },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
-    modalContent: { width: '85%', padding: 20, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center' },
-    modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15 },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    modalContent: { width: '85%', padding: 20, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
+    modalTitle: { fontSize: FontSizes.title, fontWeight: 'bold', marginBottom: 15 },
+    kandiItem: {
+        width: (screenWidth / 2) - 24, // 2 columns
+        aspectRatio: 1, // keep it perfectly square
+        margin: 8,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 0.8,
+        borderColor: 'rgba(255,255,255,0.1)', // subtle thin border
+        backgroundColor: '#111', // fallback behind image
+    },
+    kandiImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    kandiOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.21)',
+    },
+    kandiLocation: {
+        color: '#fff',
+        textAlign: 'center',
+        fontSize: FontSizes.subtitle,
+    },
 });
 
 export default ProfileScreen;
