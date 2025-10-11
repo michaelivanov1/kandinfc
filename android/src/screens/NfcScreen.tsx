@@ -20,6 +20,7 @@ import storage from '@react-native-firebase/storage';
 import ImagePicker from 'react-native-image-crop-picker';
 import Button from '../components/Button';
 import Text from '../components/Text';
+import { Colors, FontSizes } from '../theme';
 
 NfcManager.start();
 
@@ -241,7 +242,6 @@ const NfcScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text variant="title" style={{ marginBottom: 60 }}>Kandi NFC</Text>
             <View style={styles.center}>
                 <Animated.View style={[styles.scanButtonWrapper, { transform: [{ scale: pulse }] }]}>
                     <Button
@@ -253,14 +253,14 @@ const NfcScreen = () => {
                     />
                 </Animated.View>
             </View>
-            {tagID && <Text variant="body" style={styles.tagText}>Last tag: {tagID}</Text>}
+            {tagID && <Text style={styles.tagText}>Last tag: {tagID}</Text>}
 
             {/* Location Modal */}
             <Modal visible={locationModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text variant="section" style={styles.modalTitle}>
-                            {isAdopting ? 'Kandi Found!' : 'New kandi found!'}
+                        <Text style={styles.modalTitle}>
+                            {isAdopting ? 'Kandi Found!' : '✨ New kandi found!'}
                         </Text>
 
                         {/* Show current owner info if adopting */}
@@ -272,45 +272,53 @@ const NfcScreen = () => {
                                         style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 10 }}
                                     />
                                 )}
-                                <Text variant="body">Current owner: {currentOwnerName}</Text>
+                                <Text>Current owner: {currentOwnerName}</Text>
                             </View>
                         )}
 
+                        {/* Label above input */}
+                        <Text style={styles.inputLabel}>Where did you find this kandi?</Text>
+
                         {/* Location input */}
                         <TextInput
-                            placeholder={isAdopting ? 'Enter adoption location' : 'Enter origin location'}
-                            placeholderTextColor="#aaa"
+                            placeholder="e.g., EDC Las Vegas, Lost Lands..."
                             style={styles.input}
                             value={originLocation}
                             onChangeText={setOriginLocation}
                         />
 
-                        <Button
-                            title={isAdopting ? 'Adopt this kandi' : 'Next'}
-                            onPress={handleLocationNext}
-                            style={{ marginBottom: 10 }}
-                        />
-                        <Button
-                            title="Cancel"
-                            onPress={() => setLocationModalVisible(false)}
-                            style={{ backgroundColor: '#ff5555' }}
-                        />
+                        {/* Buttons horizontally */}
+                        <View style={styles.modalButtonRow}>
+                            <Button
+                                variant='outline'
+                                title="Cancel"
+                                onPress={() => setLocationModalVisible(false)}
+                                style={styles.modalButton}
+                            />
+                            <Button
+                                title={isAdopting ? 'Adopt' : 'Next'}
+                                onPress={handleLocationNext}
+                                style={styles.modalButton}
+                            />
+                        </View>
                     </View>
                 </View>
             </Modal>
+
 
             {/* Photo Modal */}
             <Modal visible={photoModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text variant="section" style={styles.modalTitle}>Add a photo</Text>
+                        <Text style={styles.modalTitle}>Add a photo</Text>
+                        <Text style={styles.modalSubtitle}>Capture this moment</Text>
                         {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
                         {!photo ? (
                             <Button title="Take Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
                         ) : (
                             <>
                                 <Button title="Add Photo" onPress={handleClaimOrAdoptKandi} style={{ marginBottom: 10 }} />
-                                <Button title="Retake Photo" onPress={handleTakePhoto} style={{ backgroundColor: '#888', marginBottom: 10 }} />
+                                <Button variant='outline' title="Retake Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
                             </>
                         )}
                     </View>
@@ -321,7 +329,7 @@ const NfcScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f2f2f2', padding: 20 },
+    container: { flex: 1, backgroundColor: Colors.background, padding: 20 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scanButtonWrapper: {
         borderRadius: 100,
@@ -334,10 +342,28 @@ const styles = StyleSheet.create({
     },
     scanButton: { width: 160, height: 160, borderRadius: 80, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
     tagText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#000' },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000099' },
-    modalContent: { width: '85%', padding: 20, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center' },
-    modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15, textAlign: 'center' },
-    input: { width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#f2f2f2', color: '#000', fontSize: 12, marginBottom: 15 },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    modalContent: { width: '90%', padding: 16, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
+    modalTitle: { fontSize: FontSizes.title, marginBottom: 24, textAlign: 'center' },
+    modalSubtitle: { fontSize: FontSizes.subtitle, marginBottom: 36, textAlign: 'center' },
+    inputLabel: {
+        alignSelf: 'flex-start',
+        marginBottom: 24,
+        fontSize: FontSizes.subtitle,
+    },
+    modalButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 10,
+    },
+    modalButton: {
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    input: {
+        width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, fontSize: 8, marginBottom: 15, backgroundColor: '#222222ff'
+    },
 });
 
 export default NfcScreen;
