@@ -3,7 +3,7 @@ import { Text as RNText, TextProps, StyleSheet } from 'react-native';
 import { Colors, FontSizes } from '../theme';
 
 interface Props extends TextProps {
-    variant?: 'title' | 'subtitle' | 'section' | 'body' | 'small';
+    variant?: 'title' | 'subtitle';
     color?: keyof typeof Colors;
 }
 
@@ -11,19 +11,14 @@ const Text: React.FC<Props> = ({ variant = 'body', color = 'text', style, childr
     const fontSize = {
         title: FontSizes.title,
         subtitle: FontSizes.subtitle,
-        section: FontSizes.section,
-        body: FontSizes.body,
-        small: FontSizes.small,
+        // section: FontSizes.section,
+        // body: FontSizes.body,
+        // small: FontSizes.small,
     }[variant];
 
     return (
         <RNText
-            style={[
-                styles.base,
-                { fontSize, color: Colors[color] },
-                variant === 'title' && styles.title,
-                style,
-            ]}
+            style={[styles.base, { fontSize, color: Colors[color] }, variant === 'title' && styles.title, style,]}
             {...rest}
         >
             {children}
