@@ -18,7 +18,7 @@ import ImagePicker from 'react-native-image-crop-picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Text from '../components/Text';
-import { Colors, Spacing } from '../theme';
+import { Colors, FontSizes, Spacing } from '../theme';
 import Button from '../components/Button';
 
 interface RouteParams { tagID: string }
@@ -35,11 +35,11 @@ const KandiDetailsScreen = () => {
 
     const currentUser = auth().currentUser;
 
-    const formatTimestamp = (ts: any) => {
+    // Format timestamp as short month, day, year (e.g., Jan 15, 2024)
+    const formatDateOnly = (ts: any) => {
         if (!ts) return '';
-        if (ts.toDate) return ts.toDate().toLocaleString();
-        if (typeof ts === 'number') return new Date(ts).toLocaleString();
-        return '';
+        const date = ts.toDate ? ts.toDate() : new Date(ts);
+        return date.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
     useEffect(() => {
@@ -162,7 +162,7 @@ const KandiDetailsScreen = () => {
             {/* Back Button */}
             <View style={styles.backButton}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={28} color={Colors.heading} />
+                    <Icon name="arrow-back" size={28} />
                 </TouchableOpacity>
             </View>
 
@@ -171,42 +171,44 @@ const KandiDetailsScreen = () => {
 
                 <View style={styles.creatorContainer}>
                     {creatorPhoto && <Image source={{ uri: creatorPhoto }} style={styles.creatorPhoto} />}
-                    <Text variant="section">Created by {creatorName}</Text>
+                    <Text variant="subtitle">Created by {creatorName}</Text>
                 </View>
+
+                {/* Divider */}
+                <View style={styles.divider} />
 
                 {/* Combined Timeline - newest first */}
                 {kandiData.history && kandiData.history.length > 0 && (
                     <>
-                        <Text variant="section" style={styles.sectionTitle}>Timeline</Text>
+                        <Text style={styles.sectionTitle}>Timeline</Text>
                         {kandiData.history
                             .slice()
                             .reverse()
                             .map((h: any, idx: number) => {
-                                const historyIndex = kandiData.history.length - 1 - idx; // match journey step
+                                const historyIndex = kandiData.history.length - 1 - idx;
                                 const journeyEntry = kandiData.journey[historyIndex];
                                 return (
                                     <View key={idx} style={styles.timelineItem}>
                                         {journeyEntry?.photo && (
-                                            <Image source={{ uri: journeyEntry.photo }} style={styles.journeyPhoto} />
+                                            <View style={styles.photoWrapper}>
+                                                <Image source={{ uri: journeyEntry.photo }} style={styles.journeyPhoto} />
+                                                {journeyEntry?.location && (
+                                                    <View style={styles.photoOverlay}>
+                                                        <Text variant="subtitle" style={styles.overlayText}>
+                                                            {journeyEntry.location}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
                                         )}
-                                        <Text variant="body" style={{ marginTop: 6 }}>
-                                            {h.displayName} {h.action} on {formatTimestamp(h.timestamp)}
+                                        <Text style={{ marginTop: 6, fontSize: 9 }}>
+                                            {h.displayName} {h.action} on {formatDateOnly(h.timestamp)}
                                         </Text>
-                                        {journeyEntry?.location && (
-                                            <Text variant="small" color="muted">
-                                                {journeyEntry.location}
-                                            </Text>
-                                        )}
                                     </View>
                                 );
                             })}
                     </>
                 )}
-
-                {/* Only show adopt button if user does NOT own the kandi */}
-                {/* {!isOwnedByCurrentUser() && (
-                    <Button title="Adopt Kandi" onPress={handleAdoptKandi} style={{ marginTop: Spacing.lg }} />
-                )} */}
             </ScrollView>
         </SafeAreaView>
     );
@@ -218,9 +220,23 @@ const styles = StyleSheet.create({
     scrollContent: { padding: Spacing.lg, paddingTop: 100 },
     creatorContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
     creatorPhoto: { width: 50, height: 50, borderRadius: 25, marginRight: Spacing.md },
+    divider: { height: 1, backgroundColor: Colors.mutedText, marginVertical: Spacing.md },
     sectionTitle: { marginBottom: Spacing.sm, marginTop: Spacing.md },
-    journeyPhoto: { width: '100%', height: 180, borderRadius: 12, marginTop: Spacing.sm },
-    timelineItem: { marginBottom: Spacing.md, borderBottomWidth: 1, borderColor: '#000000ff', paddingBottom: Spacing.md },
+    photoWrapper: { position: 'relative', marginTop: Spacing.sm },
+    journeyPhoto: { width: '100%', height: 180, borderRadius: 12 },
+    photoOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.21)',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    overlayText: { color: '#fff', fontSize: FontSizes.subtitle },
+    timelineItem: { marginBottom: Spacing.md, paddingBottom: Spacing.md },
 });
 
 export default KandiDetailsScreen;
