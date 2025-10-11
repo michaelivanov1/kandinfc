@@ -1,19 +1,15 @@
-// src/theme.ts
 export const Colors = {
-    background: '#fff',
-    text: '#333',
-    heading: '#000',
-    muted: '#666',
-    primary: '#9e0437ff',
-    grayLight: '#f8f8f8',
+    background: '#05090fff',         // dark navy/black background
+    text: '#FFFFFF',                 // main white text
+    primaryButtonColor: '#FFFFFF',   // white button background
+    modalBackground: '#161616ff',    // background color for all modals
+    border: 'rgba(255,255,255,0.1)', // soft border color for outlines on buttons/containers
+    mutedText: '#9CA3AF',            // subtle gray for labels/placeholders
 };
 
 export const FontSizes = {
-    title: 22,
-    subtitle: 16,
-    section: 16,
-    body: 14,
-    small: 12,
+    title: 20,
+    subtitle: 10,
 };
 
 export const Spacing = {
