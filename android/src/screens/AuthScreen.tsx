@@ -18,11 +18,13 @@ const AuthScreen = () => {
                     title="Sign In"
                     onPress={() => navigation.navigate('SignIn')}
                     variant="primary"
+                    style={{ marginBottom: Spacing.lg, width: '80%' }}
                 />
                 <Button
                     title="Sign Up"
                     onPress={() => navigation.navigate('SignUp')}
-                    variant="outline"
+                    variant="primary"
+                    style={{ width: '80%' }}
                 />
             </View>
         </SafeAreaView>
@@ -32,7 +34,8 @@ const AuthScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.grayLight,
+        backgroundColor: Colors.background,
+
     },
     content: {
         flex: 1,
