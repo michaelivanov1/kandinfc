@@ -10,6 +10,7 @@ export const Colors = {
 export const FontSizes = {
     title: 20,
     subtitle: 10,
+    textFieldPlaceholder: 8,
 };
 
 export const Spacing = {
