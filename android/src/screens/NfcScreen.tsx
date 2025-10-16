@@ -249,7 +249,6 @@ const NfcScreen = () => {
                         onPress={readNfcTag}
                         disabled={false}
                         style={styles.scanButton}
-                        variant="primary"
                     />
                 </Animated.View>
             </View>
@@ -269,10 +268,11 @@ const NfcScreen = () => {
                                 {currentOwnerPhoto && (
                                     <Image
                                         source={{ uri: currentOwnerPhoto }}
-                                        style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 10 }}
+                                        style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 20 }}
                                     />
                                 )}
-                                <Text>Current owner: {currentOwnerName}</Text>
+                                <Text style={{ fontSize: 8, marginBottom: 6 }}>Current owner</Text>
+                                <Text style={{ fontSize: 14, marginBottom: 24 }}>{currentOwnerName}</Text>
                             </View>
                         )}
 
@@ -340,29 +340,24 @@ const styles = StyleSheet.create({
         elevation: 5,
         marginBottom: 30,
     },
-    scanButton: { width: 160, height: 160, borderRadius: 80, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+    scanButton: { width: 160, height: 160, borderRadius: 80, justifyContent: 'center', alignItems: 'center' },
     tagText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#000' },
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '90%', padding: 16, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
     modalTitle: { fontSize: FontSizes.title, marginBottom: 24, textAlign: 'center' },
     modalSubtitle: { fontSize: FontSizes.subtitle, marginBottom: 36, textAlign: 'center' },
-    inputLabel: {
-        alignSelf: 'flex-start',
-        marginBottom: 24,
-        fontSize: FontSizes.subtitle,
-    },
-    modalButtonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginTop: 10,
-    },
-    modalButton: {
-        flex: 1,
-        marginHorizontal: 5,
-    },
+    inputLabel: { alignSelf: 'flex-start', marginBottom: 12, fontSize: FontSizes.subtitle, },
+    modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10, },
+    modalButton: { flex: 1, marginHorizontal: 5, },
     input: {
-        fontSize: FontSizes.textFieldPlaceholder, width: '100%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 8, marginBottom: 15, backgroundColor: '#222222ff'
+        fontSize: FontSizes.textFieldPlaceholder,
+        width: '100%',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        marginBottom: 15,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        color: '#fff', // removes weird outline on dark bgbackgroundColor: 'rgba(255,255,255,0.05)',
     },
 });
 
