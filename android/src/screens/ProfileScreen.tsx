@@ -51,9 +51,6 @@ const ProfileScreen = () => {
     const [kandis, setKandis] = useState<KandiItem[]>([]);
     const [photoModalVisible, setPhotoModalVisible] = useState(false);
 
-    const [timelineVisible, setTimelineVisible] = useState(false);
-    const [selectedKandi, setSelectedKandi] = useState<KandiItem | null>(null);
-
     const formatTimestamp = (ts: any) => {
         if (!ts) return '';
         if (ts.toDate) return ts.toDate().toLocaleString();
@@ -219,9 +216,46 @@ const ProfileScreen = () => {
                 </Text>
             </View>
             <View style={{ marginTop: 36, marginBottom: 24, height: 0.5, backgroundColor: Colors.mutedText, width: '100%' }} />
-            <Text style={{ fontSize: FontSizes.subtitle, textAlign: 'left' }}>My Collection</Text>
+            <Text style={{ fontSize: 16, textAlign: 'left' }}>My Collection</Text>
         </View>
     );
+
+    // Grid item renderer 
+    const renderKandiItem = ({ item }: any) => {
+        const latestJourney = item.journey[item.journey.length - 1];
+        const photoSource = latestJourney?.photo
+            ? { uri: latestJourney.photo }
+            : require('../assets/add-kandi-image.png');
+
+        const numColumns = 2;
+        const margin = 16;
+        const itemWidth = (screenWidth - margin * (numColumns + 1)) / numColumns;
+
+        return (
+            <TouchableOpacity
+                style={{
+                    width: itemWidth,
+                    aspectRatio: 1,
+                    marginLeft: margin,
+                    marginBottom: 16,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    borderWidth: 0.8,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: '#111',
+                }}
+                onPress={() => navigation.navigate('KandiDetails', { tagID: item.id })}
+                activeOpacity={0.8}
+            >
+                <Image source={photoSource} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: 'rgba(0,0,0,0.21)' }}>
+                    <Text style={{ color: '#fff', textAlign: 'center', fontSize: FontSizes.subtitle }}>
+                        {latestJourney?.location || 'Unknown'}
+                    </Text>
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -236,33 +270,20 @@ const ProfileScreen = () => {
             <FlatList
                 data={kandis}
                 keyExtractor={(item) => item.id}
-                numColumns={3}
+                numColumns={2}
                 ListHeaderComponent={renderHeader}
                 contentContainerStyle={{ paddingBottom: 40 }}
-                ListEmptyComponent={<Text variant="subtitle" style={styles.emptyText}>No kandi here yet!</Text>}
-                renderItem={({ item }) => {
-                    const latestJourney = item.journey[item.journey.length - 1];
-                    const photoSource = latestJourney?.photo
-                        ? { uri: latestJourney.photo }
-                        : require('../assets/add-kandi-image.png');
-
-                    return (
-                        <TouchableOpacity
-                            style={styles.kandiItem}
-                            onPress={() => navigation.navigate('KandiDetails', { tagID: item.id })}
-                            activeOpacity={0.8}
-                        >
-                            <Image source={photoSource} style={styles.kandiImage} />
-                            <View style={styles.kandiOverlay}>
-                                <Text style={styles.kandiLocation}>
-                                    {latestJourney?.location || 'Unknown'}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                }}
-
-
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>
+                            No Kandi Here Yet
+                        </Text>
+                        <Text style={styles.emptySubText}>
+                            Your collection is waiting to begin. Start scanning to add your first piece.
+                        </Text>
+                    </View>
+                }
+                renderItem={renderKandiItem}
             />
 
             {/* Profile Photo Modal */}
@@ -271,8 +292,9 @@ const ProfileScreen = () => {
                     <View style={styles.modalContent}>
                         <Text variant="title" style={styles.modalTitle}>Update Profile Photo</Text>
                         <Button title="Take Photo" onPress={takeProfilePhoto} style={{ marginBottom: 10 }} />
-                        <Button title="Choose from Gallery" onPress={pickProfilePhotoFromGallery} style={{ marginBottom: 10 }} />
-                        <Button title="Cancel" onPress={() => setPhotoModalVisible(false)} variant="outline" />
+                        <Button title="Choose from Gallery" onPress={pickProfilePhotoFromGallery} style={{ marginBottom: 10 }} variant="outline" />
+                        <Text style={{ fontSize: 8, color: Colors.mutedText }}>A photo is required to complete your collection</Text>
+                        <Button title="Cancel" onPress={() => setPhotoModalVisible(false)} variant="outline" style={{ marginTop: 10 }} />
                     </View>
                 </View>
             </Modal>
@@ -288,52 +310,14 @@ const styles = StyleSheet.create({
     nameDisplayContainer: { flexDirection: 'row', alignItems: 'center' },
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
     nameInput: { fontSize: 14, color: Colors.text, paddingVertical: 2, paddingRight: 10, minWidth: 120 },
-    emptyText: { fontSize: 13, color: '#999', alignSelf: 'center', fontStyle: 'italic', marginTop: 10 },
+    emptyContainer: { alignItems: 'center', marginTop: 100, },
+    emptyText: { fontSize: 12, marginBottom: 14, },
+    emptySubText: { fontSize: 8, paddingHorizontal: 60, textAlign: 'center' },
     headerContainer: { width: '100%', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#f8f8f8', flexDirection: 'row', alignItems: 'center', zIndex: 999 },
     backButton: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-
-    kandiSquare: {
-        width: (screenWidth / 2) - 30,
-        height: (screenWidth / 2) - 30,
-        margin: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'lightgray',
-        borderRadius: 12,
-    },
-    kandiLabel: { fontSize: 14, fontWeight: '600', marginTop: 8, color: '#333', textAlign: 'center' },
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '85%', padding: 20, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
     modalTitle: { fontSize: FontSizes.title, fontWeight: 'bold', marginBottom: 15 },
-    kandiItem: {
-        width: (screenWidth / 2) - 24, // 2 columns
-        aspectRatio: 1, // keep it perfectly square
-        margin: 8,
-        borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 0.8,
-        borderColor: 'rgba(255,255,255,0.1)', // subtle thin border
-        backgroundColor: '#111', // fallback behind image
-    },
-    kandiImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    kandiOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingVertical: 6,
-        paddingHorizontal: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.21)',
-    },
-    kandiLocation: {
-        color: '#fff',
-        textAlign: 'center',
-        fontSize: FontSizes.subtitle,
-    },
 });
 
 export default ProfileScreen;
