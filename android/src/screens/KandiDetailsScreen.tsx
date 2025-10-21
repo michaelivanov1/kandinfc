@@ -162,7 +162,7 @@ const KandiDetailsScreen = () => {
             {/* Back Button */}
             <View style={styles.backButton}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={28} />
+                    <Icon name="arrow-back" size={28} color={'white'} />
                 </TouchableOpacity>
             </View>
 
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.21)',
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderBottomLeftRadius: 12,
