@@ -191,7 +191,7 @@ const ProfileScreen = () => {
                             onSubmitEditing={handleSaveName}
                         />
                         <TouchableOpacity onPress={handleSaveName} disabled={loading}>
-                            <Icon name="check" size={20} color="#000" />
+                            <Icon name="check" size={20} color={'white'} />
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -199,7 +199,7 @@ const ProfileScreen = () => {
                         <Text variant='title' style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
                         {isOwnProfile && (
                             <TouchableOpacity onPress={() => setEditingName(true)}>
-                                <Icon name="edit" size={18} />
+                                <Icon name="edit" size={18} color={'white'} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -248,7 +248,7 @@ const ProfileScreen = () => {
                 activeOpacity={0.8}
             >
                 <Image source={photoSource} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: 'rgba(0,0,0,0.21)' }}>
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
                     <Text style={{ color: '#fff', textAlign: 'center', fontSize: FontSizes.subtitle }}>
                         {latestJourney?.location || 'Unknown'}
                     </Text>
@@ -262,7 +262,7 @@ const ProfileScreen = () => {
             {showBackButton && (
                 <View style={[styles.headerContainer, { marginTop: insets.top + 10 }]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Icon name="arrow-back" size={28} color="#000" />
+                        <Icon name="arrow-back" size={28} color={'white'} />
                     </TouchableOpacity>
                 </View>
             )}
@@ -293,8 +293,8 @@ const ProfileScreen = () => {
                         <Text variant="title" style={styles.modalTitle}>Update Profile Photo</Text>
                         <Button title="Take Photo" onPress={takeProfilePhoto} style={{ marginBottom: 10 }} />
                         <Button title="Choose from Gallery" onPress={pickProfilePhotoFromGallery} style={{ marginBottom: 10 }} variant="outline" />
-                        <Text style={{ fontSize: 8, color: Colors.mutedText }}>A photo is required to complete your collection</Text>
-                        <Button title="Cancel" onPress={() => setPhotoModalVisible(false)} variant="outline" style={{ marginTop: 10 }} />
+                        {/* <Text style={{ fontSize: 8, color: Colors.mutedText }}>A photo is required to complete your collection</Text> */}
+                        <Button title="Cancel" onPress={() => setPhotoModalVisible(false)} variant="outline" />
                     </View>
                 </View>
             </Modal>
