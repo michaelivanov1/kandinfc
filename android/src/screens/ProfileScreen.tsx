@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     backButton: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '85%', padding: 20, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
-    modalTitle: { fontSize: FontSizes.title, fontWeight: 'bold', marginBottom: 15 },
+    modalTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 24 },
 });
 
 export default ProfileScreen;
