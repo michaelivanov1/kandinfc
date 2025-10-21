@@ -11,6 +11,7 @@ import {
     Image,
     Platform,
     PermissionsAndroid,
+    TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
@@ -38,7 +39,7 @@ const NfcScreen = () => {
     const currentUser = auth().currentUser;
     const pulse = useRef(new Animated.Value(1)).current;
 
-    // Pulse animation for scan button
+    // Pulse animation
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -58,19 +59,15 @@ const NfcScreen = () => {
         ).start();
     }, []);
 
-    // NFC registration
     useEffect(() => {
         NfcManager.registerTagEvent().catch(err => console.warn('NFC registration failed', err));
-
         return () => {
             void NfcManager.unregisterTagEvent().catch(() => { });
         };
     }, []);
 
-    // Read NFC tag
     const readNfcTag = async () => {
         if (isReading) {
-            // Cancel scanning if already scanning
             setIsReading(false);
             await NfcManager.cancelTechnologyRequest().catch(() => { });
             return;
@@ -220,7 +217,6 @@ const NfcScreen = () => {
         }
     };
 
-    // Get current owner info
     const currentOwnerId = kandiData?.history?.length ? kandiData.history[kandiData.history.length - 1].userId : null;
     const [currentOwnerPhoto, setCurrentOwnerPhoto] = useState<string | null>(null);
     const [currentOwnerName, setCurrentOwnerName] = useState<string>('Unknown');
@@ -256,73 +252,76 @@ const NfcScreen = () => {
 
             {/* Location Modal */}
             <Modal visible={locationModalVisible} transparent animationType="slide">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>
-                            {isAdopting ? 'Kandi Found!' : '✨ New kandi found!'}
-                        </Text>
+                <TouchableWithoutFeedback onPress={() => setLocationModalVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>
+                                    {isAdopting ? 'Kandi Found!' : '✨ New kandi found!'}
+                                </Text>
 
-                        {/* Show current owner info if adopting */}
-                        {isAdopting && (
-                            <View style={{ alignItems: 'center', marginBottom: 15 }}>
-                                {currentOwnerPhoto && (
-                                    <Image
-                                        source={{ uri: currentOwnerPhoto }}
-                                        style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 20 }}
-                                    />
+                                {isAdopting && (
+                                    <View style={{ alignItems: 'center', marginBottom: 15 }}>
+                                        {currentOwnerPhoto && (
+                                            <Image
+                                                source={{ uri: currentOwnerPhoto }}
+                                                style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 20 }}
+                                            />
+                                        )}
+                                        <Text style={{ fontSize: 8, marginBottom: 6 }}>Current owner</Text>
+                                        <Text style={{ fontSize: 14, marginBottom: 24 }}>{currentOwnerName}</Text>
+                                    </View>
                                 )}
-                                <Text style={{ fontSize: 8, marginBottom: 6 }}>Current owner</Text>
-                                <Text style={{ fontSize: 14, marginBottom: 24 }}>{currentOwnerName}</Text>
+
+                                <Text style={styles.inputLabel}>Where did you find this kandi?</Text>
+
+                                <TextInput
+                                    placeholder="e.g., EDC Las Vegas, Lost Lands..."
+                                    style={styles.input}
+                                    value={originLocation}
+                                    onChangeText={setOriginLocation}
+                                />
+
+                                <View style={styles.modalButtonRow}>
+                                    <Button
+                                        variant='outline'
+                                        title="Cancel"
+                                        onPress={() => setLocationModalVisible(false)}
+                                        style={styles.modalButton}
+                                    />
+                                    <Button
+                                        title={isAdopting ? 'Adopt' : 'Next'}
+                                        onPress={handleLocationNext}
+                                        style={styles.modalButton}
+                                    />
+                                </View>
                             </View>
-                        )}
-
-                        {/* Label above input */}
-                        <Text style={styles.inputLabel}>Where did you find this kandi?</Text>
-
-                        {/* Location input */}
-                        <TextInput
-                            placeholder="e.g., EDC Las Vegas, Lost Lands..."
-                            style={styles.input}
-                            value={originLocation}
-                            onChangeText={setOriginLocation}
-                        />
-
-                        {/* Buttons horizontally */}
-                        <View style={styles.modalButtonRow}>
-                            <Button
-                                variant='outline'
-                                title="Cancel"
-                                onPress={() => setLocationModalVisible(false)}
-                                style={styles.modalButton}
-                            />
-                            <Button
-                                title={isAdopting ? 'Adopt' : 'Next'}
-                                onPress={handleLocationNext}
-                                style={styles.modalButton}
-                            />
-                        </View>
+                        </TouchableWithoutFeedback>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </Modal>
-
 
             {/* Photo Modal */}
             <Modal visible={photoModalVisible} transparent animationType="slide">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Add a photo</Text>
-                        <Text style={styles.modalSubtitle}>Capture this moment</Text>
-                        {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
-                        {!photo ? (
-                            <Button title="Take Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
-                        ) : (
-                            <>
-                                <Button title="Add Photo" onPress={handleClaimOrAdoptKandi} style={{ marginBottom: 10 }} />
-                                <Button variant='outline' title="Retake Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
-                            </>
-                        )}
+                <TouchableWithoutFeedback onPress={() => setPhotoModalVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Add a photo</Text>
+                                <Text style={styles.modalSubtitle}>Capture this moment</Text>
+                                {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
+                                {!photo ? (
+                                    <Button title="Take Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
+                                ) : (
+                                    <>
+                                        <Button title="Add Photo" onPress={handleClaimOrAdoptKandi} style={{ marginBottom: 10 }} />
+                                        <Button variant='outline' title="Retake Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
+                                    </>
+                                )}
+                            </View>
+                        </TouchableWithoutFeedback>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </Modal>
         </SafeAreaView>
     );
@@ -342,13 +341,13 @@ const styles = StyleSheet.create({
     },
     scanButton: { width: 160, height: 160, borderRadius: 80, justifyContent: 'center', alignItems: 'center' },
     tagText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#000' },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
     modalContent: { width: '90%', padding: 16, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
     modalTitle: { fontSize: FontSizes.title, marginBottom: 24, textAlign: 'center' },
     modalSubtitle: { fontSize: FontSizes.subtitle, marginBottom: 36, textAlign: 'center' },
-    inputLabel: { alignSelf: 'flex-start', marginBottom: 12, fontSize: FontSizes.subtitle, },
-    modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10, },
-    modalButton: { flex: 1, marginHorizontal: 5, },
+    inputLabel: { alignSelf: 'flex-start', marginBottom: 12, fontSize: FontSizes.subtitle },
+    modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
+    modalButton: { flex: 1, marginHorizontal: 5 },
     input: {
         fontSize: FontSizes.textFieldPlaceholder,
         width: '100%',
@@ -357,7 +356,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 15,
         backgroundColor: 'rgba(255,255,255,0.05)',
-        color: '#fff', // removes weird outline on dark bgbackgroundColor: 'rgba(255,255,255,0.05)',
+        color: '#fff',
     },
 });
 
