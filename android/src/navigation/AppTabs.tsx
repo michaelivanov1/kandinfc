@@ -35,7 +35,7 @@ const AppTabs = () => {
                 headerShown: false,
                 tabBarShowLabel: false,
                 tabBarStyle: {
-                    backgroundColor: '#111',
+                    backgroundColor: '#1f1e1eff',
                     height: 70,
                     paddingTop: 8,
                     position: 'absolute',
