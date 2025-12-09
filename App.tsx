@@ -6,7 +6,7 @@
 // npx react-native start --reset-cache
 
 import React from 'react';
-import AppNavigator from './android/src/navigation/AppNavigator';
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
   return <AppNavigator />;
