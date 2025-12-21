@@ -53,5 +53,7 @@
     <array>
         <string>MaterialIcons.ttf</string>
     </array>
+	<key>NFCReaderUsageDescription</key>
+	<string>We need NFC to scan Kandi tags</string>
 </dict>
 </plist>
