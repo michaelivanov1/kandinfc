@@ -101,7 +101,7 @@ const NfcScreen = () => {
             setPhoto(null);
             setLocationModalVisible(true);
         } catch (ex) {
-            console.warn('NFC error', ex);
+            console.warn('NFC error', ex?.toString());
             Alert.alert('NFC Error', ex?.toString());
         } finally {
             setIsReading(false);
