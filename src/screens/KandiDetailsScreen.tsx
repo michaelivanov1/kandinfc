@@ -18,10 +18,12 @@ import ImagePicker from 'react-native-image-crop-picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Text from '../components/Text';
-import { Colors, FontSizes, Spacing } from '../theme';
 import Button from '../components/Button';
+import { Colors, Spacing } from '../theme';
 
-interface RouteParams { tagID: string }
+interface RouteParams {
+    tagID: string;
+}
 
 const KandiDetailsScreen = () => {
     const navigation = useNavigation<any>();
@@ -35,11 +37,14 @@ const KandiDetailsScreen = () => {
 
     const currentUser = auth().currentUser;
 
-    // Format timestamp as short month, day, year (e.g., Jan 15, 2024)
     const formatDateOnly = (ts: any) => {
         if (!ts) return '';
         const date = ts.toDate ? ts.toDate() : new Date(ts);
-        return date.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+        return date.toLocaleDateString('default', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        });
     };
 
     useEffect(() => {
@@ -51,16 +56,22 @@ const KandiDetailsScreen = () => {
                     navigation.goBack();
                     return;
                 }
+
                 const data = doc.data();
                 if (!data) {
                     Alert.alert('Error', 'Kandi data is missing');
                     navigation.goBack();
                     return;
                 }
+
                 setKandiData(data);
 
                 if (data.creatorId) {
-                    const userDoc = await firestore().collection('users').doc(data.creatorId).get();
+                    const userDoc = await firestore()
+                        .collection('users')
+                        .doc(data.creatorId)
+                        .get();
+
                     if (userDoc.exists()) {
                         setCreatorName(userDoc.data()?.displayName || 'Unknown');
                         setCreatorPhoto(userDoc.data()?.profilePhoto || null);
@@ -76,19 +87,22 @@ const KandiDetailsScreen = () => {
         };
 
         fetchKandi();
-    }, [tagID]);
+    }, [tagID, navigation]);
 
-    // Check if current user already owns this kandi
     const isOwnedByCurrentUser = () => {
         if (!currentUser || !kandiData) return false;
         return kandiData.history?.some((h: any) => h.userId === currentUser.uid);
     };
 
-    // ===== Adoption Function =====
     const handleAdoptKandi = async () => {
-        if (!currentUser) return Alert.alert('Login Required', 'You must be logged in to adopt a kandi.');
-        if (currentUser.uid === kandiData.creatorId) return Alert.alert('Oops', 'You cannot adopt your own kandi.');
-        if (isOwnedByCurrentUser()) return Alert.alert('Oops', 'You already own this kandi.');
+        if (!currentUser)
+            return Alert.alert('Login Required', 'You must be logged in to adopt a kandi.');
+
+        if (currentUser.uid === kandiData.creatorId)
+            return Alert.alert('Oops', 'You cannot adopt your own kandi.');
+
+        if (isOwnedByCurrentUser())
+            return Alert.alert('Oops', 'You already own this kandi.');
 
         try {
             let photoURL: string | null = null;
@@ -103,8 +117,10 @@ const KandiDetailsScreen = () => {
                         buttonNegative: 'Cancel',
                     }
                 );
-                if (granted !== PermissionsAndroid.RESULTS.GRANTED)
+
+                if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
                     return Alert.alert('Permission denied', 'Camera is required.');
+                }
             }
 
             const image = await ImagePicker.openCamera({
@@ -116,7 +132,11 @@ const KandiDetailsScreen = () => {
 
             if (image.path) {
                 const ref = storage().ref(`kandiPhotos/${tagID}_${currentUser.uid}.jpg`);
-                await ref.putFile(image.path.startsWith('file://') ? image.path : `file://${image.path}`);
+                await ref.putFile(
+                    image.path.startsWith('file://')
+                        ? image.path
+                        : `file://${image.path}`
+                );
                 photoURL = await ref.getDownloadURL();
             }
 
@@ -150,59 +170,71 @@ const KandiDetailsScreen = () => {
         }
     };
 
-    if (loading)
+    if (loading) {
         return (
             <SafeAreaView style={styles.center}>
-                <Text>Loading...</Text>
+                <Text variant="caption">Loading...</Text>
             </SafeAreaView>
         );
+    }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
-            {/* Back Button */}
+        <SafeAreaView style={styles.container}>
             <View style={styles.backButton}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={28} color={'white'} />
+                    <Icon name="arrow-back" size={28} color="white" />
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text variant="title" style={{ marginBottom: Spacing.lg }}>Kandi Details</Text>
+                <Text variant="title" style={styles.header}>
+                    Kandi Details
+                </Text>
 
                 <View style={styles.creatorContainer}>
-                    {creatorPhoto && <Image source={{ uri: creatorPhoto }} style={styles.creatorPhoto} />}
+                    {creatorPhoto && (
+                        <Image source={{ uri: creatorPhoto }} style={styles.creatorPhoto} />
+                    )}
                     <Text variant="subtitle">Created by {creatorName}</Text>
                 </View>
 
-                {/* Divider */}
                 <View style={styles.divider} />
 
-                {/* Combined Timeline - newest first */}
                 {kandiData.history && kandiData.history.length > 0 && (
                     <>
-                        <Text style={styles.sectionTitle}>Timeline</Text>
+                        <Text variant="subtitle" style={styles.sectionTitle}>
+                            Timeline
+                        </Text>
+
                         {kandiData.history
                             .slice()
                             .reverse()
                             .map((h: any, idx: number) => {
                                 const historyIndex = kandiData.history.length - 1 - idx;
                                 const journeyEntry = kandiData.journey[historyIndex];
+
                                 return (
                                     <View key={idx} style={styles.timelineItem}>
                                         {journeyEntry?.photo && (
                                             <View style={styles.photoWrapper}>
-                                                <Image source={{ uri: journeyEntry.photo }} style={styles.journeyPhoto} />
+                                                <Image
+                                                    source={{ uri: journeyEntry.photo }}
+                                                    style={styles.journeyPhoto}
+                                                />
+
                                                 {journeyEntry?.location && (
                                                     <View style={styles.photoOverlay}>
-                                                        <Text variant="subtitle" style={styles.overlayText}>
+                                                        <Text variant="caption" style={styles.overlayText}>
                                                             {journeyEntry.location}
                                                         </Text>
                                                     </View>
                                                 )}
                                             </View>
                                         )}
-                                        <Text style={{ marginTop: 6, fontSize: 9 }}>
-                                            {h.displayName} {h.action} on {formatDateOnly(h.timestamp)}
+
+                                        <Text variant="caption" style={styles.timelineText}>
+                                            {h.displayName} {h.action} on{' '}
+                                            {formatDateOnly(h.timestamp)}
                                         </Text>
                                     </View>
                                 );
@@ -215,28 +247,78 @@ const KandiDetailsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    backButton: { position: 'absolute', top: 105, left: 20, zIndex: 10 },
-    scrollContent: { padding: Spacing.lg, paddingTop: 100 },
-    creatorContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
-    creatorPhoto: { width: 50, height: 50, borderRadius: 25, marginRight: Spacing.md },
-    divider: { height: 1, backgroundColor: Colors.mutedText, marginVertical: Spacing.md },
-    sectionTitle: { marginBottom: Spacing.sm, marginTop: Spacing.md },
-    photoWrapper: { position: 'relative', marginTop: Spacing.sm },
-    journeyPhoto: { width: '100%', height: 180, borderRadius: 12 },
+    container: {
+        flex: 1,
+        backgroundColor: Colors.background,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 105,
+        left: 20,
+        zIndex: 10,
+    },
+    scrollContent: {
+        padding: Spacing.lg,
+        paddingTop: 100,
+    },
+    header: {
+        marginBottom: Spacing.lg,
+    },
+    creatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+    },
+    creatorPhoto: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: Spacing.md,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: Colors.mutedText,
+        marginVertical: Spacing.md,
+    },
+    sectionTitle: {
+        marginBottom: Spacing.sm,
+        marginTop: Spacing.md,
+    },
+    timelineItem: {
+        marginBottom: Spacing.md,
+        paddingBottom: Spacing.md,
+    },
+    timelineText: {
+        marginTop: 6,
+    },
+    photoWrapper: {
+        position: 'relative',
+        marginTop: Spacing.sm,
+    },
+    journeyPhoto: {
+        width: '100%',
+        height: 180,
+        borderRadius: 12,
+    },
     photoOverlay: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        backgroundColor: 'rgba(0,0,0,0.45)',
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderBottomLeftRadius: 12,
         borderBottomRightRadius: 12,
     },
-    overlayText: { color: '#fff', fontSize: FontSizes.subtitle },
-    timelineItem: { marginBottom: Spacing.md, paddingBottom: Spacing.md },
+    overlayText: {
+        color: '#fff',
+    },
 });
 
 export default KandiDetailsScreen;

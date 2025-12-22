@@ -4,7 +4,7 @@ import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
 import Text from '../components/Text';
-import { Colors } from '../theme';
+import { Colors, FontSizes } from '../theme';
 
 const SettingsScreen = () => {
     const navigation = useNavigation<any>();
@@ -20,7 +20,7 @@ const SettingsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text variant="title" style={{ marginBottom: 30 }}>
+            <Text variant="title" style={{ marginBottom: 30, fontSize: FontSizes.title }}>
                 Settings
             </Text>
             <Button title="Sign Out" onPress={handleSignOut} variant="primary" />

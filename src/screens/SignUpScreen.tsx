@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, TextInput, StyleSheet, Alert, Text } from 'react-native';
+import { SafeAreaView, View, TextInput, StyleSheet, Alert } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
+import Text from '../components/Text';
 import { Colors, Spacing, FontSizes } from '../theme';
 
 const SignUpScreen = () => {
@@ -48,11 +49,19 @@ const SignUpScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.card}>
-                <Text style={styles.title}>Create Account</Text>
-                <Text style={styles.subtitle}>Join the community</Text>
+                <Text variant="title">Create Account</Text>
+                <Text
+                    variant="subtitle"
+                    color="mutedText"
+                    style={{ textAlign: 'center', marginBottom: 46 }}
+                >
+                    Join the community
+                </Text>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Display Name</Text>
+                    <Text variant="subtitle" color="mutedText">
+                        Display Name
+                    </Text>
                     <TextInput
                         placeholder="Your display name"
                         placeholderTextColor={Colors.mutedText}
@@ -63,7 +72,9 @@ const SignUpScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email</Text>
+                    <Text variant="subtitle" color="mutedText">
+                        Email
+                    </Text>
                     <TextInput
                         placeholder="you@example.com"
                         placeholderTextColor={Colors.mutedText}
@@ -76,7 +87,9 @@ const SignUpScreen = () => {
                 </View>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Password</Text>
+                    <Text variant="subtitle" color="mutedText">
+                        Password
+                    </Text>
                     <TextInput
                         placeholder="••••••••"
                         placeholderTextColor={Colors.mutedText}
@@ -97,8 +110,8 @@ const SignUpScreen = () => {
                 <Button
                     variant="ghost"
                     title="Already have an account? Sign In"
-                    style={{ marginTop: Spacing.md, }}
-                    textStyle={{ fontSize: 9 }} // custom font size for this button
+                    style={{ marginTop: Spacing.md }}
+                    textStyle={{ fontSize: FontSizes.caption }}
                     onPress={() => navigation.navigate('SignIn')}
                 />
             </View>
@@ -121,25 +134,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: Spacing.xl,
     },
-    title: {
-        color: Colors.text,
-        fontSize: FontSizes.title,
-        marginBottom: Spacing.sm,
-        fontWeight: '700',
-        textAlign: 'center',
-    },
-    subtitle: {
-        color: Colors.mutedText,
-        fontSize: FontSizes.subtitle,
-        textAlign: 'center',
-        marginBottom: 46,
-    },
     inputGroup: {
-        marginBottom: Spacing.md,
-    },
-    label: {
-        color: Colors.mutedText,
-        fontSize: FontSizes.subtitle,
         marginBottom: Spacing.md,
     },
     input: {

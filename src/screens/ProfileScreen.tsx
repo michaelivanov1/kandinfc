@@ -184,7 +184,7 @@ const ProfileScreen = () => {
                 {editingName ? (
                     <View style={styles.editNameContainer}>
                         <TextInput
-                            style={styles.nameInput}
+                            style={[styles.nameInput, { fontSize: FontSizes.title }]}
                             value={displayName}
                             onChangeText={setDisplayName}
                             autoFocus
@@ -196,7 +196,7 @@ const ProfileScreen = () => {
                     </View>
                 ) : (
                     <View style={styles.nameDisplayContainer}>
-                        <Text variant='title' style={{ marginRight: 6 }}>{displayName || 'Unnamed User'}</Text>
+                        <Text variant='title' style={{ marginRight: 6, fontSize: FontSizes.title }}>{displayName || 'Unnamed User'}</Text>
                         {isOwnProfile && (
                             <TouchableOpacity onPress={() => setEditingName(true)}>
                                 <Icon name="edit" size={18} color={'white'} />
@@ -206,7 +206,7 @@ const ProfileScreen = () => {
                 )}
             </View>
             <View>
-                <Text style={{ color: Colors.mutedText, marginTop: 8, fontSize: 8 }}>
+                <Text style={{ color: Colors.mutedText, marginTop: 8, fontSize: FontSizes.caption }}>
                     Member since {currentUser?.metadata?.creationTime
                         ? new Date(currentUser.metadata.creationTime).toLocaleString('default', {
                             month: 'short',
@@ -216,7 +216,7 @@ const ProfileScreen = () => {
                 </Text>
             </View>
             <View style={{ marginTop: 36, marginBottom: 24, height: 0.5, backgroundColor: Colors.mutedText, width: '100%' }} />
-            <Text style={{ fontSize: 16, textAlign: 'left' }}>My Collection</Text>
+            <Text style={{ fontSize: FontSizes.title, textAlign: 'left' }}>My Collection</Text>
         </View>
     );
 
@@ -275,10 +275,10 @@ const ProfileScreen = () => {
                 contentContainerStyle={{ paddingBottom: 40 }}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>
+                        <Text style={{ ...styles.emptyText, fontSize: FontSizes.subtitle }}>
                             No Kandi Here Yet
                         </Text>
-                        <Text style={styles.emptySubText}>
+                        <Text style={{ ...styles.emptySubText, fontSize: FontSizes.caption }}>
                             Your collection is waiting to begin. Start scanning to add your first piece.
                         </Text>
                     </View>
@@ -290,10 +290,9 @@ const ProfileScreen = () => {
             <Modal visible={photoModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text variant="title" style={styles.modalTitle}>Update Profile Photo</Text>
+                        <Text variant="title" style={{ ...styles.modalTitle, fontSize: FontSizes.title }}>Update Profile Photo</Text>
                         <Button title="Take Photo" onPress={takeProfilePhoto} style={{ marginBottom: 10 }} />
                         <Button title="Choose from Gallery" onPress={pickProfilePhotoFromGallery} style={{ marginBottom: 10 }} variant="outline" />
-                        {/* <Text style={{ fontSize: 8, color: Colors.mutedText }}>A photo is required to complete your collection</Text> */}
                         <Button title="Cancel" onPress={() => setPhotoModalVisible(false)} variant="outline" />
                     </View>
                 </View>
@@ -309,15 +308,15 @@ const styles = StyleSheet.create({
     nameContainer: { alignItems: 'center' },
     nameDisplayContainer: { flexDirection: 'row', alignItems: 'center' },
     editNameContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#ccc' },
-    nameInput: { fontSize: 14, color: Colors.text, paddingVertical: 2, paddingRight: 10, minWidth: 120 },
+    nameInput: { color: Colors.text, paddingVertical: 2, paddingRight: 10, minWidth: 120 },
     emptyContainer: { alignItems: 'center', marginTop: 100, },
-    emptyText: { fontSize: 12, marginBottom: 14, },
-    emptySubText: { fontSize: 8, paddingHorizontal: 60, textAlign: 'center' },
+    emptyText: { marginBottom: 14, },
+    emptySubText: { paddingHorizontal: 60, textAlign: 'center' },
     headerContainer: { width: '100%', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#f8f8f8', flexDirection: 'row', alignItems: 'center', zIndex: 999 },
     backButton: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
     modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '85%', padding: 20, backgroundColor: Colors.modalBackground, borderRadius: 12, alignItems: 'center' },
-    modalTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 24 },
+    modalTitle: { fontWeight: 'bold', marginBottom: 24 },
 });
 
 export default ProfileScreen;
