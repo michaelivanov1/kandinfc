@@ -438,26 +438,41 @@ const NfcScreen = () => {
     }, []);
 
     const readNfcTag = async () => {
-        if (isReading) return;
+        if (isReading) {
+            setIsReading(false);
+            await NfcManager.cancelTechnologyRequest().catch(() => { });
+            return;
+        }
 
         try {
+            setIsReading(true);
+
+            // Start NFC manager if not started
+            await NfcManager.start();
+
+            // Check if NFC is supported
             const isSupported = await NfcManager.isSupported();
             if (!isSupported) {
                 Alert.alert('NFC Not Supported', 'Your device does not support NFC scanning.');
                 return;
             }
 
-            setIsReading(true);
-
+            // Cancel any previous session
             await NfcManager.cancelTechnologyRequest().catch(() => { });
-            await NfcManager.requestTechnology(NfcTech.Ndef, { alertMessage: 'Ready to scan Kandi tag' });
 
+            // Request NDEF tag (iOS only reads NDEF)
+            await NfcManager.requestTechnology(NfcTech.Ndef, {
+                alertMessage: 'Ready to scan your Kandi tag',
+            });
+
+            // Read the tag
             const tag = await NfcManager.getTag();
             const id = tag?.id ?? null;
             setTagID(id);
 
             if (!id) return;
 
+            // Fetch kandi data from Firestore
             const doc = await firestore().collection('kandis').doc(id).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
@@ -475,14 +490,17 @@ const NfcScreen = () => {
             setOriginLocation('');
             setPhoto(null);
             setLocationModalVisible(true);
+
         } catch (ex) {
             console.warn('NFC error', ex?.toString());
             Alert.alert('NFC Error', ex?.toString());
         } finally {
             setIsReading(false);
+            // Always cancel session at the end
             await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
+
 
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
