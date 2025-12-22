@@ -3,37 +3,46 @@ import { Text as RNText, TextProps, StyleSheet } from 'react-native';
 import { Colors, FontSizes } from '../theme';
 
 interface Props extends TextProps {
-    variant?: 'title' | 'subtitle';
-    color?: keyof typeof Colors;
+  variant?: 'title' | 'subtitle' | 'caption';
+  color?: keyof typeof Colors;
 }
 
-const Text: React.FC<Props> = ({ variant = 'body', color = 'text', style, children, ...rest }) => {
-    const fontSize = {
-        title: FontSizes.title,
-        subtitle: FontSizes.subtitle,
-        // section: FontSizes.section,
-        // body: FontSizes.body,
-        // small: FontSizes.small,
-    }[variant];
+const Text: React.FC<Props> = ({
+  variant = 'body',
+  color = 'text',
+  style,
+  children,
+  ...rest
+}) => {
+  const fontSize = {
+    title: FontSizes.title,
+    subtitle: FontSizes.subtitle,
+    caption: FontSizes.caption,
+  }[variant];
 
-    return (
-        <RNText
-            style={[styles.base, { fontSize, color: Colors[color] }, variant === 'title' && styles.title, style,]}
-            {...rest}
-        >
-            {children}
-        </RNText>
-    );
+  return (
+    <RNText
+      style={[
+        styles.base,
+        { fontSize, color: Colors[color] },
+        variant === 'title' && styles.title,
+        style,
+      ]}
+      {...rest}
+    >
+      {children}
+    </RNText>
+  );
 };
 
 const styles = StyleSheet.create({
-    base: {
-        color: Colors.text,
-    },
-    title: {
-        fontWeight: '600',
-        textAlign: 'center',
-    },
+  base: {
+    color: Colors.text,
+  },
+  title: {
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
 
 export default Text;

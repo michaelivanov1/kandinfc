@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
     modalButton: { flex: 1, marginHorizontal: 5 },
     input: {
-        fontSize: FontSizes.textFieldPlaceholder,
+        fontSize: FontSizes.caption,
         width: '100%',
         paddingVertical: 12,
         paddingHorizontal: 12,
@@ -758,7 +758,7 @@ export default NfcScreen;
 //     modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
 //     modalButton: { flex: 1, marginHorizontal: 5 },
 //     input: {
-//         fontSize: FontSizes.textFieldPlaceholder,
+//         fontSize: FontSizes.caption,
 //         width: '100%',
 //         paddingVertical: 12,
 //         paddingHorizontal: 12,

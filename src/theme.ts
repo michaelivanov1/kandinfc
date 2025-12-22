@@ -1,3 +1,5 @@
+import { iosFontScale } from "./services/iosFontScale";
+
 export const Colors = {
     background: '#05090fff',         // dark navy/black background
     text: '#FFFFFF',                 // main white text
@@ -8,9 +10,9 @@ export const Colors = {
 };
 
 export const FontSizes = {
-    title: 20,
-    subtitle: 10,
-    textFieldPlaceholder: 8,
+    title: iosFontScale(20),
+    subtitle: iosFontScale(10),
+    caption: iosFontScale(8),
 };
 
 export const Spacing = {

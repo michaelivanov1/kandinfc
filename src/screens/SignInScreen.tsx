@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, TextInput, StyleSheet, Alert, Text } from 'react-native';
+import { SafeAreaView, View, TextInput, StyleSheet, Alert } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../components/Button';
+import Text from '../components/Text';
 import { Colors, Spacing, FontSizes } from '../theme';
 
 const SignInScreen = () => {
@@ -24,15 +25,13 @@ const SignInScreen = () => {
       const user = userCredential.user;
 
       const userDoc = await firestore().collection('users').doc(user.uid).get();
-      const userData = userDoc.data();
-      console.log('User document:', userData);
+      console.log('User document:', userDoc.data());
 
       navigation.reset({
         index: 0,
         routes: [{ name: 'AppTabs' }],
       });
     } catch (error: any) {
-      console.warn('Sign In Error:', error);
       Alert.alert('Sign In Error', error.message);
     } finally {
       setLoading(false);
@@ -42,11 +41,15 @@ const SignInScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text variant="title">Welcome back</Text>
+        <Text variant="subtitle" color="mutedText" style={{ marginBottom: 46, textAlign: 'center' }}>
+          Sign in to your account
+        </Text>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
+          <Text variant="subtitle" color="mutedText">
+            Email
+          </Text>
           <TextInput
             placeholder="you@example.com"
             placeholderTextColor={Colors.mutedText}
@@ -59,7 +62,9 @@ const SignInScreen = () => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
+          <Text variant="subtitle" color="mutedText">
+            Password
+          </Text>
           <TextInput
             placeholder="••••••••"
             placeholderTextColor={Colors.mutedText}
@@ -76,6 +81,7 @@ const SignInScreen = () => {
           style={{ marginTop: Spacing.lg }}
           disabled={loading}
         />
+
         <Button
           variant="ghost"
           title="Create account"
@@ -102,25 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.xl,
   },
-  title: {
-    color: Colors.text,
-    fontSize: FontSizes.title,
-    marginBottom: Spacing.sm,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: Colors.mutedText,
-    fontSize: FontSizes.subtitle,
-    textAlign: 'center',
-    marginBottom: 46
-  },
   inputGroup: {
-    marginBottom: Spacing.md,
-  },
-  label: {
-    color: Colors.mutedText,
-    fontSize: FontSizes.subtitle,
     marginBottom: Spacing.md,
   },
   input: {
@@ -129,7 +117,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     color: Colors.text,
-    fontSize: FontSizes.textFieldPlaceholder,
+    fontSize: FontSizes.caption,
     borderWidth: 1,
     borderColor: Colors.border,
   },
