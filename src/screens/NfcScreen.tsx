@@ -78,8 +78,9 @@ const NfcScreen = () => {
 
     try {
         setIsReading(true);
-
+        console.log('trying nfc scan outside of platform check')
         if (Platform.OS === 'ios') {
+            console.log('trying nfc scan inside of platform check')
             // iOS: listen for discovered tag
             NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: any) => {
                 console.log('iOS Tag discovered', tag);
