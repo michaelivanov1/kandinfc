@@ -433,7 +433,7 @@ const NfcScreen = () => {
 
             await NfcManager.requestTechnology(NfcTech.Ndef, {
                 alertMessage: Platform.OS === 'ios'
-                    ? 'Hold your phone near the kandi'
+                    ? 'Hold your phone near the kandis'
                     : 'Ready to scan NFC tag',
             });
 
