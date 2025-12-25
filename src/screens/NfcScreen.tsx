@@ -431,71 +431,80 @@ const NfcScreen = () => {
         };
     }, []);
 
-    const readNfcTag = async () => {
-        try {
-            setIsReading(true);
+   const readNfcTag = async () => {
+    try {
+        setIsReading(true);
 
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-            await NfcManager.requestTechnology(NfcTech.Ndef, {
-                alertMessage: 'Hold your phone near the kandi',
-            });
+        // Cancel any previous requests
+        await NfcManager.cancelTechnologyRequest().catch(() => {});
 
-            const tag = await NfcManager.getTag();
-            if (!tag) throw new Error('No tag detected');
+        // Ask the OS to start scanning for NDEF tags
+        await NfcManager.requestTechnology(NfcTech.Ndef, {
+            alertMessage: 'Hold your phone near the kandi',
+        });
 
-            let kandiId: string | null = null;
+        const tag = await NfcManager.getTag();
+        if (!tag) throw new Error('No tag detected');
 
-            // 1️⃣ Read NDEF (iOS + Android)
-            if (Array.isArray(tag.ndefMessage) && tag.ndefMessage.length > 0) {
-                const record = tag.ndefMessage[0];
+        let kandiId: string | null = null;
 
-                const decoded = Ndef.text.decodePayload(
-                    Uint8Array.from(record.payload) // ✅ FIXED
-                );
+        // --- 1️⃣ Try to read NDEF first (works on iOS + Android) ---
+        if (Array.isArray(tag.ndefMessage) && tag.ndefMessage.length > 0) {
+            const record = tag.ndefMessage[0];
 
-                if (decoded) {
-                    kandiId = decoded.trim().toUpperCase();
-                }
+            // iOS text records have a status byte at index 0
+            const payload = record.payload instanceof Uint8Array
+                ? record.payload
+                : Uint8Array.from(record.payload);
+
+            try {
+                const decoded = Ndef.text.decodePayload(payload);
+                if (decoded) kandiId = decoded.trim().toUpperCase();
+            } catch {
+                // ignore decode errors, fallback to UID
             }
-
-            // 2️⃣ First scan → write NDEF using UID
-            if (!kandiId) {
-                if (!tag.id) throw new Error('Tag UID unavailable');
-
-                kandiId = tag.id.toUpperCase();
-
-                const encoded = Ndef.encodeMessage([
-                    Ndef.textRecord(kandiId),
-                ]);
-
-                if (!encoded) throw new Error('Failed to encode NDEF');
-
-                // ✅ PASS number[] DIRECTLY
-                await NfcManager.ndefHandler.writeNdefMessage(encoded);
-            }
-
-            // 3️⃣ Continue EXACTLY as before
-            setTagID(kandiId);
-
-            const kandiDoc = await firestore()
-                .collection('kandis')
-                .doc(kandiId)
-                .get();
-
-            if (kandiDoc.exists()) {
-                // your existing logic
-            } else {
-                // your existing logic
-            }
-
-        } catch (err) {
-            console.warn('NFC error', err);
-            Alert.alert('Scan failed', 'Could not read the NFC tag.');
-        } finally {
-            setIsReading(false);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
-    };
+
+        // --- 2️⃣ If no NDEF found, write UID as NDEF ---
+        if (!kandiId) {
+            if (!tag.id) throw new Error('Tag UID unavailable');
+
+            kandiId = tag.id.toUpperCase();
+
+            const encoded = Ndef.encodeMessage([
+                Ndef.textRecord(kandiId),
+            ]);
+
+            if (!encoded) throw new Error('Failed to encode NDEF');
+
+            // writeNdefMessage expects number[] (not Uint8Array)
+            await NfcManager.ndefHandler.writeNdefMessage(encoded);
+            console.log('✅ Tag programmed with NDEF UID:', kandiId);
+        }
+
+        // --- 3️⃣ Continue with your existing logic ---
+        setTagID(kandiId);
+
+        const kandiDoc = await firestore()
+            .collection('kandis')
+            .doc(kandiId)
+            .get();
+
+        if (kandiDoc.exists()) {
+            // existing success logic (owner check, adopt, navigate)
+        } else {
+            // existing "new kandi" logic
+        }
+
+    } catch (err) {
+        console.warn('NFC error', err);
+        Alert.alert('Scan failed', 'Could not read the NFC tag.');
+    } finally {
+        setIsReading(false);
+        await NfcManager.cancelTechnologyRequest().catch(() => {});
+    }
+};
+
 
 
 
