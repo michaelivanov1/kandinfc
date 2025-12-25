@@ -14,7 +14,7 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import NfcManager, { NfcTech, NfcEvents, Ndef } from 'react-native-nfc-manager';
+import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
@@ -72,7 +72,7 @@ const NfcScreen = () => {
         }
     }, []);
 
-    // --- NFC Read function (cross-platform) ---
+    // --- Cross-platform NFC read ---
     const readNfcTag = async () => {
         if (isReading) return;
 
@@ -100,13 +100,61 @@ const NfcScreen = () => {
                 setTagID(id);
                 Alert.alert('Tag Read', `ID: ${id}`);
             } else {
-                // Android flow
                 await NfcManager.requestTechnology(NfcTech.Ndef);
                 const tag = await NfcManager.getTag();
                 setTagID(tag?.id ?? null);
             }
         } catch (err: any) {
             Alert.alert('NFC Error', err.message || 'Scan failed');
+        } finally {
+            setIsReading(false);
+            if (Platform.OS === 'ios') NfcManager.invalidateSessionIOS();
+            else await NfcManager.cancelTechnologyRequest().catch(() => { });
+        }
+    };
+
+    // --- NFC Test function for iOS ---
+    const testNfcTag = async () => {
+        if (isReading) return;
+
+        try {
+            setIsReading(true);
+
+            if (Platform.OS === 'ios') {
+                await NfcManager.requestTechnology(NfcTech.Ndef, {
+                    alertMessage: 'Scan your tag to see contents',
+                });
+
+                const tag = await NfcManager.getTag();
+                NfcManager.invalidateSessionIOS();
+
+                console.log('RAW TAG:', tag);
+                Alert.alert('RAW TAG', JSON.stringify(tag, null, 1000));
+
+                if (tag?.ndefMessage?.length) {
+                    tag.ndefMessage.forEach((record: any, idx: number) => {
+                        console.log(`Record #${idx}`, record);
+                        if (record.payload) {
+                            try {
+                                const text = Ndef.text.decodePayload(new Uint8Array(record.payload));
+                                console.log(`Decoded text #${idx}:`, text);
+                            } catch {
+                                console.log(`Record #${idx} payload is not text`);
+                            }
+                        }
+                    });
+                } else {
+                    console.log('No NDEF messages on this tag');
+                    Alert.alert('Info', 'No NDEF messages on this tag');
+                }
+            } else {
+                const tag = await NfcManager.getTag();
+                console.log('RAW TAG (Android):', tag);
+                Alert.alert('RAW TAG', JSON.stringify(tag, null, 1000));
+            }
+        } catch (e: any) {
+            console.warn('NFC Test Error', e);
+            Alert.alert('NFC Error', e.message || 'Scan failed');
         } finally {
             setIsReading(false);
             if (Platform.OS === 'ios') NfcManager.invalidateSessionIOS();
@@ -253,6 +301,14 @@ const NfcScreen = () => {
                         disabled={false}
                         style={styles.scanButton}
                     />
+                    {/* Test button for iOS */}
+                    {Platform.OS === 'ios' && (
+                        <Button
+                            title="Test Tag"
+                            onPress={testNfcTag}
+                            style={{ marginTop: 20 }}
+                        />
+                    )}
                 </Animated.View>
             </View>
             {tagID && <Text variant="caption" style={styles.tagText}>Last tag: {tagID}</Text>}
