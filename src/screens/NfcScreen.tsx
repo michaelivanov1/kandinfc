@@ -400,7 +400,6 @@ const NfcScreen = () => {
     const [photo, setPhoto] = useState<string | null>(null);
     const [isAdopting, setIsAdopting] = useState(false);
     const [kandiData, setKandiData] = useState<any>(null);
-    const [iosNeedsSecondScan, setIosNeedsSecondScan] = useState(false);
 
     const currentUser = auth().currentUser;
     const pulse = useRef(new Animated.Value(1)).current;
@@ -431,7 +430,6 @@ const NfcScreen = () => {
 
         try {
             await NfcManager.cancelTechnologyRequest().catch(() => { });
-
             await NfcManager.requestTechnology(NfcTech.Ndef, {
                 alertMessage: Platform.OS === 'ios'
                     ? 'Hold your phone near the kandi'
@@ -439,35 +437,42 @@ const NfcScreen = () => {
             });
 
             const tag = await NfcManager.getTag();
+            console.log('Tag scanned:', tag);
+
             if (!tag) throw new Error('No tag detected');
 
             let kandiId: string | null = null;
 
-            // --- Read NDEF message first ---
-            if (Array.isArray(tag.ndefMessage) && tag.ndefMessage.length > 0) {
+            // --- Always read NDEF first ---
+            if (tag.ndefMessage && tag.ndefMessage.length > 0) {
                 const record = tag.ndefMessage[0];
                 const payload = record.payload instanceof Uint8Array
                     ? record.payload
                     : Uint8Array.from(record.payload);
                 const decoded = Ndef.text.decodePayload(payload);
                 kandiId = decoded?.trim().toUpperCase() ?? null;
+                console.log('Decoded NDEF ID:', kandiId);
             }
 
-            // --- Fallback to UID if NDEF not found ---
-            if (!kandiId) {
-                if (!tag.id) throw new Error('Tag UID unavailable');
+            // --- Fallback to UID if NDEF somehow empty ---
+            if (!kandiId && tag.id) {
                 kandiId = tag.id.toUpperCase();
+                console.log('Fallback UID:', kandiId);
             }
+
+            if (!kandiId) throw new Error('Could not read ID from tag');
 
             setTagID(kandiId);
 
-            // --- Continue your Firebase logic ---
             const doc = await firestore().collection('kandis').doc(kandiId).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
 
+            console.log('kandiData:', data);
+
             if (data) {
                 if (currentUser?.uid === data.creatorId) {
+                    console.log('User is creator, navigating to details');
                     navigation.navigate('KandiDetails', { tagID: kandiId });
                     return;
                 }
@@ -476,8 +481,10 @@ const NfcScreen = () => {
                 setIsAdopting(false);
             }
 
+            // --- Force modal to open ---
             setOriginLocation('');
             setPhoto(null);
+            console.log('Opening location modal');
             setLocationModalVisible(true);
 
         } catch (err: any) {
@@ -489,8 +496,7 @@ const NfcScreen = () => {
         }
     };
 
-
-
+    // --- Remaining functions unchanged ---
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
             return Alert.alert('Error', 'Please enter the origin location.');
@@ -623,7 +629,7 @@ const NfcScreen = () => {
             <View style={styles.center}>
                 <Animated.View style={[styles.scanButtonWrapper, { transform: [{ scale: pulse }] }]}>
                     <Button
-                        title={isReading ? 'Scanning...' : iosNeedsSecondScan ? 'Scan Again' : 'Scan Kandi'}
+                        title={isReading ? 'Scanning...' : 'Scan Kandi'}
                         onPress={readNfcTag}
                         disabled={false}
                         style={styles.scanButton}
