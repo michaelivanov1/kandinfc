@@ -444,17 +444,19 @@ const NfcScreen = () => {
             let kandiId: string | null = null;
 
             if (Platform.OS === 'android') {
-                // --- Android: use raw UID if no NDEF ---
+                // Android: original logic
                 kandiId = tag?.id?.toUpperCase() ?? null;
 
-                // Optional: write NDEF if first scan
-                if (tag.ndefMessage == null || tag.ndefMessage.length === 0) {
-                    if (!kandiId) throw new Error('Tag UID unavailable');
-                    const bytes = Ndef.encodeMessage([Ndef.textRecord(kandiId!)]);
+                if (!kandiId) throw new Error('Tag UID unavailable');
+
+                // Optional: write NDEF once if empty
+                if (!tag.ndefMessage || tag.ndefMessage.length === 0) {
+                    const bytes = Ndef.encodeMessage([Ndef.textRecord(kandiId)]);
                     await NfcManager.ndefHandler.writeNdefMessage(bytes);
                 }
+
             } else {
-                // --- iOS ---
+                // iOS: check NDEF first
                 if (tag.ndefMessage && tag.ndefMessage.length > 0) {
                     const record = tag.ndefMessage[0];
                     const payload = record.payload instanceof Uint8Array
@@ -465,13 +467,12 @@ const NfcScreen = () => {
                 }
 
                 if (!kandiId) {
-                    // First-time scan on iOS: write NDEF and prompt second scan
+                    // First-time scan on iOS: write NDEF and prompt user to scan again
                     if (!tag.id) throw new Error('Tag UID unavailable');
-
                     kandiId = tag.id.toUpperCase();
                     const bytes = Ndef.encodeMessage([Ndef.textRecord(kandiId)]);
 
-                    // ✅ Use ndefHandler after requesting NDEF tech
+                    // Write NDEF after requesting NDEF tech
                     await NfcManager.ndefHandler?.writeNdefMessage(bytes);
 
                     Alert.alert(
@@ -481,13 +482,12 @@ const NfcScreen = () => {
                     setIosNeedsSecondScan(true);
                     return; // exit without opening modals
                 }
-
             }
 
+            // Continue normal flow
             setTagID(kandiId);
             setIosNeedsSecondScan(false);
 
-            // --- Continue with your normal Firebase logic ---
             const doc = await firestore().collection('kandis').doc(kandiId!).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
@@ -514,6 +514,7 @@ const NfcScreen = () => {
             await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
+
 
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
