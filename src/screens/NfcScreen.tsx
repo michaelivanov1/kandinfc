@@ -66,59 +66,33 @@ const NfcScreen = () => {
         };
     }, []);
 
-    const readNfcTag = async () => {
-        if (isReading) return;
+   const readNfcTag = async () => {
+    if (isReading) return;
 
-        try {
-            setIsReading(true);
+    try {
+        setIsReading(true);
 
-            if (Platform.OS === 'android') {
-                await NfcManager.cancelTechnologyRequest().catch(() => { });
-            }
+        await NfcManager.requestTechnology(
+            NfcTech.Ndef,
+            { alertMessage: 'Ready to scan NFC tag' }
+        );
 
-            await NfcManager.requestTechnology(
-                NfcTech.Ndef,
-                Platform.OS === 'ios'
-                    ? { alertMessage: 'Ready to scan NFC tag' }
-                    : {}
-            );
+        const tag = await NfcManager.getTag();
 
-            const tag = await NfcManager.getTag();
-            if (!tag) return;
+        console.log('RAW TAG:', JSON.stringify(tag, null, 2));
 
-            const id =
-                Platform.OS === 'ios'
-                    ? tag?.id ?? null // iOS will have this for many NDEF tags
-                    : tag?.id ?? null;
-
-            if (!id) {
-                Alert.alert('Error', 'Could not read NFC tag');
-                return;
-            }
-
-            setTagID(id);
-
-            const doc = await firestore().collection('kandis').doc(id).get();
-            const data = doc.exists() ? doc.data() : null;
-            setKandiData(data);
-
-            if (data && currentUser?.uid === data.creatorId) {
-                navigation.navigate('KandiDetails', { tagID: id });
-                return;
-            }
-
-            setIsAdopting(!!data);
-            setOriginLocation('');
-            setPhoto(null);
-            setLocationModalVisible(true);
-        } catch (e: any) {
-            console.warn('NFC error', e);
-            Alert.alert('NFC Error', 'Scan failed. Try again.');
-        } finally {
-            setIsReading(false);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-        }
-    };
+        Alert.alert(
+            'Tag Read',
+            JSON.stringify(tag, null, 2).slice(0, 1000)
+        );
+    } catch (e) {
+        console.warn(e);
+        Alert.alert('NFC Error', 'Scan failed');
+    } finally {
+        setIsReading(false);
+        await NfcManager.cancelTechnologyRequest().catch(() => {});
+    }
+};
 
 
 
