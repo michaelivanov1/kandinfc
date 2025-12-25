@@ -67,20 +67,11 @@ const NfcScreen = () => {
     }, []);
 
     const readNfcTag = async () => {
-        if (isReading) {
-            setIsReading(false);
-
-            if (Platform.OS === 'android') {
-                await NfcManager.cancelTechnologyRequest().catch(() => { });
-            }
-
-            return;
-        }
+        if (isReading) return;
 
         try {
             setIsReading(true);
 
-            // only cancel first on Android
             if (Platform.OS === 'android') {
                 await NfcManager.cancelTechnologyRequest().catch(() => { });
             }
@@ -93,37 +84,42 @@ const NfcScreen = () => {
             );
 
             const tag = await NfcManager.getTag();
-            const id = tag?.id ?? null;
-            setTagID(id);
+            if (!tag) return;
 
-            if (!id) return;
+            const id =
+                Platform.OS === 'ios'
+                    ? tag?.id ?? null // iOS will have this for many NDEF tags
+                    : tag?.id ?? null;
+
+            if (!id) {
+                Alert.alert('Error', 'Could not read NFC tag');
+                return;
+            }
+
+            setTagID(id);
 
             const doc = await firestore().collection('kandis').doc(id).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
 
-            if (data) {
-                if (currentUser?.uid === data.creatorId) {
-                    navigation.navigate('KandiDetails', { tagID: id });
-                    return;
-                }
-                setIsAdopting(true);
-            } else {
-                setIsAdopting(false);
+            if (data && currentUser?.uid === data.creatorId) {
+                navigation.navigate('KandiDetails', { tagID: id });
+                return;
             }
 
+            setIsAdopting(!!data);
             setOriginLocation('');
             setPhoto(null);
             setLocationModalVisible(true);
-        } catch (ex: any) {
-            console.warn('NFC error', ex?.toString?.());
-            Alert.alert('NFC Error', ex?.toString?.() ?? 'Unknown NFC error');
+        } catch (e: any) {
+            console.warn('NFC error', e);
+            Alert.alert('NFC Error', 'Scan failed. Try again.');
         } finally {
             setIsReading(false);
-
             await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
+
 
 
     const handleLocationNext = () => {
