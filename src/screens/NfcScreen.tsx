@@ -74,61 +74,45 @@ const NfcScreen = () => {
 
     // --- NFC Read function (cross-platform) ---
     const readNfcTag = async () => {
-    if (isReading) return;
+        if (isReading) return;
 
-    try {
-        setIsReading(true);
-        console.log('trying nfc scan outside of platform check')
-        if (Platform.OS === 'ios') {
-            console.log('trying nfc scan inside of platform check')
-            // iOS: listen for discovered tag
-            NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: any) => {
-                console.log('iOS Tag discovered', tag);
+        try {
+            setIsReading(true);
+
+            if (Platform.OS === 'ios') {
+                await NfcManager.requestTechnology(NfcTech.Ndef, {
+                    alertMessage: 'Hold your phone near the tag',
+                });
+                const tag = await NfcManager.getTag();
+                NfcManager.invalidateSessionIOS();
+
+                if (!tag) throw new Error('No tag detected');
 
                 let id: string | null = null;
                 const record = tag.ndefMessage?.[0];
                 if (record?.payload) {
                     const payload = new Uint8Array(record.payload);
-                    try {
-                        id = Ndef.text.decodePayload(payload);
-                    } catch {
-                        id = null;
-                    }
+                    id = Ndef.text.decodePayload(payload);
                 }
 
-                if (!id) {
-                    Alert.alert('NFC Error', 'Failed to read tag ID');
-                } else {
-                    setTagID(id);
-                    Alert.alert('Tag Read', `ID: ${id}`);
-                }
+                if (!id) throw new Error('Failed to read tag ID');
 
-                NfcManager.setEventListener(NfcEvents.DiscoverTag, null); // remove listener
-                NfcManager.invalidateSessionIOS(); // iOS only
-                setIsReading(false);
-            });
-
-            await NfcManager.requestTechnology(NfcTech.Ndef, { alertMessage: 'Ready to scan NFC tag' });
-        } else {
-            // Android
-            await NfcManager.requestTechnology(NfcTech.Ndef);
-
-            const tag = await NfcManager.getTag();
-            if (!tag?.id) throw new Error('Failed to read tag ID');
-
-            setTagID(tag.id);
-            Alert.alert('Tag Read', `ID: ${tag.id}`);
+                setTagID(id);
+                Alert.alert('Tag Read', `ID: ${id}`);
+            } else {
+                // Android flow
+                await NfcManager.requestTechnology(NfcTech.Ndef);
+                const tag = await NfcManager.getTag();
+                setTagID(tag?.id ?? null);
+            }
+        } catch (err: any) {
+            Alert.alert('NFC Error', err.message || 'Scan failed');
+        } finally {
+            setIsReading(false);
+            if (Platform.OS === 'ios') NfcManager.invalidateSessionIOS();
+            else await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
-
-    } catch (e: any) {
-        console.warn('NFC Error', e);
-        Alert.alert('NFC Error', e.message || 'Scan failed');
-        setIsReading(false);
-        if (Platform.OS === 'android') {
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-        }
-    }
-};
+    };
 
     // --- Camera, photo, location, claim/adopt code remains unchanged ---
     const handleLocationNext = () => {
