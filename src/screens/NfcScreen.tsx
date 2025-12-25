@@ -443,52 +443,26 @@ const NfcScreen = () => {
 
             let kandiId: string | null = null;
 
-            if (Platform.OS === 'android') {
-                // Android: original logic
-                kandiId = tag?.id?.toUpperCase() ?? null;
-
-                if (!kandiId) throw new Error('Tag UID unavailable');
-
-                // Optional: write NDEF once if empty
-                if (!tag.ndefMessage || tag.ndefMessage.length === 0) {
-                    const bytes = Ndef.encodeMessage([Ndef.textRecord(kandiId)]);
-                    await NfcManager.ndefHandler.writeNdefMessage(bytes);
-                }
-
-            } else {
-                // iOS: check NDEF first
-                if (tag.ndefMessage && tag.ndefMessage.length > 0) {
-                    const record = tag.ndefMessage[0];
-                    const payload = record.payload instanceof Uint8Array
-                        ? record.payload
-                        : Uint8Array.from(record.payload);
-                    const decoded = Ndef.text.decodePayload(payload);
-                    kandiId = decoded?.trim().toUpperCase() ?? null;
-                }
-
-                if (!kandiId) {
-                    // First-time scan on iOS: write NDEF and prompt user to scan again
-                    if (!tag.id) throw new Error('Tag UID unavailable');
-                    kandiId = tag.id.toUpperCase();
-                    const bytes = Ndef.encodeMessage([Ndef.textRecord(kandiId)]);
-
-                    // Write NDEF after requesting NDEF tech
-                    await NfcManager.ndefHandler?.writeNdefMessage(bytes);
-
-                    Alert.alert(
-                        'Tag programmed!',
-                        'iOS requires a second scan. Tap "Scan" again to continue.',
-                    );
-                    setIosNeedsSecondScan(true);
-                    return; // exit without opening modals
-                }
+            // --- Read NDEF message first ---
+            if (Array.isArray(tag.ndefMessage) && tag.ndefMessage.length > 0) {
+                const record = tag.ndefMessage[0];
+                const payload = record.payload instanceof Uint8Array
+                    ? record.payload
+                    : Uint8Array.from(record.payload);
+                const decoded = Ndef.text.decodePayload(payload);
+                kandiId = decoded?.trim().toUpperCase() ?? null;
             }
 
-            // Continue normal flow
-            setTagID(kandiId);
-            setIosNeedsSecondScan(false);
+            // --- Fallback to UID if NDEF not found ---
+            if (!kandiId) {
+                if (!tag.id) throw new Error('Tag UID unavailable');
+                kandiId = tag.id.toUpperCase();
+            }
 
-            const doc = await firestore().collection('kandis').doc(kandiId!).get();
+            setTagID(kandiId);
+
+            // --- Continue your Firebase logic ---
+            const doc = await firestore().collection('kandis').doc(kandiId).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
 
@@ -514,6 +488,7 @@ const NfcScreen = () => {
             await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
+
 
 
     const handleLocationNext = () => {
