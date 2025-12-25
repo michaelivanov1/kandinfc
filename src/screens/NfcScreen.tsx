@@ -14,7 +14,7 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
@@ -23,7 +23,6 @@ import Button from '../components/Button';
 import Text from '../components/Text';
 import { Colors } from '../theme';
 
-// Start NFC
 NfcManager.start();
 
 const NfcScreen = () => {
@@ -60,109 +59,56 @@ const NfcScreen = () => {
         ).start();
     }, []);
 
-    // NFC initialization for Android
     useEffect(() => {
-        if (Platform.OS === 'android') {
-            NfcManager.start()
-                .then(() => NfcManager.registerTagEvent())
-                .catch(() => { });
-            return () => {
-                NfcManager.unregisterTagEvent().catch(() => { });
-            };
-        }
+        NfcManager.registerTagEvent().catch(err => console.warn('NFC registration failed', err));
+        return () => {
+            void NfcManager.unregisterTagEvent().catch(() => { });
+        };
     }, []);
 
-    // --- Cross-platform NFC read ---
     const readNfcTag = async () => {
-        if (isReading) return;
+        if (isReading) {
+            setIsReading(false);
+            await NfcManager.cancelTechnologyRequest().catch(() => { });
+            return;
+        }
 
         try {
             setIsReading(true);
+            await NfcManager.cancelTechnologyRequest().catch(() => { });
+            await NfcManager.requestTechnology(NfcTech.Ndef, { alertMessage: 'Ready to scan NFC tag' });
+            const tag = await NfcManager.getTag();
+            const id = tag?.id ?? null;
+            setTagID(id);
 
-            if (Platform.OS === 'ios') {
-                await NfcManager.requestTechnology(NfcTech.Ndef, {
-                    alertMessage: 'Hold your phone near the tag',
-                });
-                const tag = await NfcManager.getTag();
-                NfcManager.invalidateSessionIOS();
+            if (!id) return;
 
-                if (!tag) throw new Error('No tag detected');
+            const doc = await firestore().collection('kandis').doc(id).get();
+            const data = doc.exists() ? doc.data() : null;
+            setKandiData(data);
 
-                let id: string | null = null;
-                const record = tag.ndefMessage?.[0];
-                if (record?.payload) {
-                    const payload = new Uint8Array(record.payload);
-                    id = Ndef.text.decodePayload(payload);
+            if (data) {
+                if (currentUser?.uid === data.creatorId) {
+                    navigation.navigate('KandiDetails', { tagID: id });
+                    return;
                 }
-
-                if (!id) throw new Error('Failed to read tag ID');
-
-                setTagID(id);
-                Alert.alert('Tag Read', `ID: ${id}`);
+                setIsAdopting(true);
             } else {
-                await NfcManager.requestTechnology(NfcTech.Ndef);
-                const tag = await NfcManager.getTag();
-                setTagID(tag?.id ?? null);
+                setIsAdopting(false);
             }
-        } catch (err: any) {
-            Alert.alert('NFC Error', err.message || 'Scan failed');
+
+            setOriginLocation('');
+            setPhoto(null);
+            setLocationModalVisible(true);
+        } catch (ex) {
+            console.warn('NFC error', ex?.toString());
+            Alert.alert('NFC Error', ex?.toString());
         } finally {
             setIsReading(false);
-            if (Platform.OS === 'ios') NfcManager.invalidateSessionIOS();
-            else await NfcManager.cancelTechnologyRequest().catch(() => { });
+            await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
 
-    // --- NFC Test function for iOS ---
-    const testNfcTag = async () => {
-        if (isReading) return;
-
-        try {
-            setIsReading(true);
-
-            if (Platform.OS === 'ios') {
-                await NfcManager.requestTechnology(NfcTech.Ndef, {
-                    alertMessage: 'Scan your tag to see contents',
-                });
-
-                const tag = await NfcManager.getTag();
-                NfcManager.invalidateSessionIOS();
-
-                console.log('RAW TAG:', tag);
-                Alert.alert('RAW TAG', JSON.stringify(tag, null, 1000));
-
-                if (tag?.ndefMessage?.length) {
-                    tag.ndefMessage.forEach((record: any, idx: number) => {
-                        console.log(`Record #${idx}`, record);
-                        if (record.payload) {
-                            try {
-                                const text = Ndef.text.decodePayload(new Uint8Array(record.payload));
-                                console.log(`Decoded text #${idx}:`, text);
-                            } catch {
-                                console.log(`Record #${idx} payload is not text`);
-                            }
-                        }
-                    });
-                } else {
-                    console.log('No NDEF messages on this tag');
-                    Alert.alert('Info', 'No NDEF messages on this tag');
-                }
-            } else {
-                const tag = await NfcManager.getTag();
-                console.log('RAW TAG (Android):', tag);
-                Alert.alert('RAW TAG', JSON.stringify(tag, null, 1000));
-            }
-        } catch (e: any) {
-            console.warn('NFC Test Error', e);
-            Alert.alert('NFC Error', e.message || 'Scan failed');
-        } finally {
-            setIsReading(false);
-            if (Platform.OS === 'ios') NfcManager.invalidateSessionIOS();
-            else await NfcManager.cancelTechnologyRequest().catch(() => { });
-        }
-    };
-
-    // --- Camera, photo, location, claim/adopt code remains unchanged ---
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
             return Alert.alert('Error', 'Please enter the origin location.');
@@ -290,7 +236,6 @@ const NfcScreen = () => {
         }
     }, [currentOwnerId]);
 
-    // --- UI Rendering ---
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.center}>
@@ -301,23 +246,84 @@ const NfcScreen = () => {
                         disabled={false}
                         style={styles.scanButton}
                     />
-                    {/* Test button for iOS */}
-                    {Platform.OS === 'ios' && (
-                        <Button
-                            title="Test Tag"
-                            onPress={testNfcTag}
-                            style={{ marginTop: 20 }}
-                        />
-                    )}
                 </Animated.View>
             </View>
             {tagID && <Text variant="caption" style={styles.tagText}>Last tag: {tagID}</Text>}
 
             {/* Location Modal */}
-            {/* ... same as before ... */}
+            <Modal visible={locationModalVisible} transparent animationType="slide">
+                <TouchableWithoutFeedback onPress={() => setLocationModalVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={styles.modalContent}>
+                                <Text variant="title" style={styles.modalTitle}>
+                                    {isAdopting ? 'Kandi Found!' : '✨ New kandi found!'}
+                                </Text>
+
+                                {isAdopting && (
+                                    <View style={{ alignItems: 'center', marginBottom: 15 }}>
+                                        {currentOwnerPhoto && (
+                                            <Image
+                                                source={{ uri: currentOwnerPhoto }}
+                                                style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 20 }}
+                                            />
+                                        )}
+                                        <Text variant="caption" style={{ marginBottom: 6 }}>Current owner</Text>
+                                        <Text variant="subtitle" style={{ marginBottom: 24 }}>{currentOwnerName}</Text>
+                                    </View>
+                                )}
+
+                                <Text variant="subtitle" style={styles.inputLabel}>Where did you find this kandi?</Text>
+
+                                <TextInput
+                                    placeholder="e.g., EDC Las Vegas, Lost Lands..."
+                                    placeholderTextColor="rgba(255,255,255,0.5)"
+                                    style={styles.input}
+                                    value={originLocation}
+                                    onChangeText={setOriginLocation}
+                                />
+
+                                <View style={styles.modalButtonRow}>
+                                    <Button
+                                        variant='outline'
+                                        title="Cancel"
+                                        onPress={() => setLocationModalVisible(false)}
+                                        style={styles.modalButton}
+                                    />
+                                    <Button
+                                        title={isAdopting ? 'Adopt' : 'Next'}
+                                        onPress={handleLocationNext}
+                                        style={styles.modalButton}
+                                    />
+                                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
 
             {/* Photo Modal */}
-            {/* ... same as before ... */}
+            <Modal visible={photoModalVisible} transparent animationType="slide">
+                <TouchableWithoutFeedback onPress={() => setPhotoModalVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={styles.modalContent}>
+                                <Text variant="title" style={styles.modalTitle}>Add a photo</Text>
+                                <Text variant="subtitle" style={styles.modalSubtitle}>Capture this moment</Text>
+                                {photo && <Image source={{ uri: photo }} style={{ width: 200, height: 200, marginBottom: 15, borderRadius: 12 }} />}
+                                {!photo ? (
+                                    <Button title="Take Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
+                                ) : (
+                                    <>
+                                        <Button title="Add Photo" onPress={handleClaimOrAdoptKandi} style={{ marginBottom: 10 }} />
+                                        <Button variant='outline' title="Retake Photo" onPress={handleTakePhoto} style={{ marginBottom: 10 }} />
+                                    </>
+                                )}
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </SafeAreaView>
     );
 };
