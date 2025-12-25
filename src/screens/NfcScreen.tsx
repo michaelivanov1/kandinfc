@@ -430,6 +430,7 @@ const NfcScreen = () => {
 
         try {
             await NfcManager.cancelTechnologyRequest().catch(() => { });
+
             await NfcManager.requestTechnology(NfcTech.Ndef, {
                 alertMessage: Platform.OS === 'ios'
                     ? 'Hold your phone near the kandi'
@@ -437,42 +438,35 @@ const NfcScreen = () => {
             });
 
             const tag = await NfcManager.getTag();
-            console.log('Tag scanned:', tag);
-
             if (!tag) throw new Error('No tag detected');
 
             let kandiId: string | null = null;
 
-            // --- Always read NDEF first ---
+            // Prefer NDEF payload if present
             if (tag.ndefMessage && tag.ndefMessage.length > 0) {
                 const record = tag.ndefMessage[0];
                 const payload = record.payload instanceof Uint8Array
                     ? record.payload
                     : Uint8Array.from(record.payload);
-                const decoded = Ndef.text.decodePayload(payload);
-                kandiId = decoded?.trim().toUpperCase() ?? null;
-                console.log('Decoded NDEF ID:', kandiId);
+                kandiId = Ndef.text.decodePayload(payload)?.trim().toUpperCase() ?? null;
             }
 
-            // --- Fallback to UID if NDEF somehow empty ---
+            // Fallback to UID if no NDEF
             if (!kandiId && tag.id) {
                 kandiId = tag.id.toUpperCase();
-                console.log('Fallback UID:', kandiId);
             }
 
-            if (!kandiId) throw new Error('Could not read ID from tag');
+            if (!kandiId) throw new Error('Could not read Kandi ID');
 
             setTagID(kandiId);
 
+            // --- Firebase logic ---
             const doc = await firestore().collection('kandis').doc(kandiId).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
 
-            console.log('kandiData:', data);
-
             if (data) {
                 if (currentUser?.uid === data.creatorId) {
-                    console.log('User is creator, navigating to details');
                     navigation.navigate('KandiDetails', { tagID: kandiId });
                     return;
                 }
@@ -481,10 +475,8 @@ const NfcScreen = () => {
                 setIsAdopting(false);
             }
 
-            // --- Force modal to open ---
             setOriginLocation('');
             setPhoto(null);
-            console.log('Opening location modal');
             setLocationModalVisible(true);
 
         } catch (err: any) {
@@ -496,7 +488,7 @@ const NfcScreen = () => {
         }
     };
 
-    // --- Remaining functions unchanged ---
+
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
             return Alert.alert('Error', 'Please enter the origin location.');
@@ -749,3 +741,4 @@ const styles = StyleSheet.create({
 });
 
 export default NfcScreen;
+
