@@ -69,14 +69,29 @@ const NfcScreen = () => {
     const readNfcTag = async () => {
         if (isReading) {
             setIsReading(false);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
+
+            if (Platform.OS === 'android') {
+                await NfcManager.cancelTechnologyRequest().catch(() => { });
+            }
+
             return;
         }
 
         try {
             setIsReading(true);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-            await NfcManager.requestTechnology(NfcTech.Ndef, { alertMessage: 'Ready to scan NFC tag' });
+
+            // only cancel first on Android
+            if (Platform.OS === 'android') {
+                await NfcManager.cancelTechnologyRequest().catch(() => { });
+            }
+
+            await NfcManager.requestTechnology(
+                NfcTech.Ndef,
+                Platform.OS === 'ios'
+                    ? { alertMessage: 'Ready to scan NFC tag' }
+                    : {}
+            );
+
             const tag = await NfcManager.getTag();
             const id = tag?.id ?? null;
             setTagID(id);
@@ -100,14 +115,16 @@ const NfcScreen = () => {
             setOriginLocation('');
             setPhoto(null);
             setLocationModalVisible(true);
-        } catch (ex) {
-            console.warn('NFC error', ex?.toString());
-            Alert.alert('NFC Error', ex?.toString());
+        } catch (ex: any) {
+            console.warn('NFC error', ex?.toString?.());
+            Alert.alert('NFC Error', ex?.toString?.() ?? 'Unknown NFC error');
         } finally {
             setIsReading(false);
+
             await NfcManager.cancelTechnologyRequest().catch(() => { });
         }
     };
+
 
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
