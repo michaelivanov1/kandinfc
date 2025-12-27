@@ -1,75 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import NfcProxy from '../services/NfcProxy'; 
-import nfcManager, { Ndef } from 'react-native-nfc-manager';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import NfcManager, { Ndef, NfcEvents } from 'react-native-nfc-manager';
 
 export default function NfcTest() {
     const [status, setStatus] = useState('Idle');
-    const [lastTag, setLastTag] = useState<string | null>(null);
 
     useEffect(() => {
-        // Initialize NFC
-        (async () => {
-            try {
-                const supported = await NfcProxy.init();
-                console.log('NFC supported?', supported);
-                setStatus(supported ? 'Ready to scan' : 'NFC not supported');
-            } catch (err) {
-                console.log('NFC init error:', err);
-                setStatus('NFC init failed');
-            }
-        })();
+        // Start NFC manager
+        NfcManager.start()
+            .then(() => console.log('NFC started'))
+            .catch(err => console.warn('NFC start error', err));
 
+        // Cleanup on unmount
         return () => {
-            // Cleanup on unmount
-            nfcManager.cancelTechnologyRequest?.();
+            NfcManager.cancelTechnologyRequest().catch(() => { });
         };
     }, []);
 
     const scanTag = async () => {
+        if (Platform.OS !== 'ios') {
+            Alert.alert('Info', 'This test only works on iOS.');
+            return;
+        }
+
         try {
             setStatus('Waiting for tag...');
-            console.log('Starting NFC scan...');
+            console.log('Registering iOS tag event');
 
-            const tag = await NfcProxy.readNdefOnce();
-            console.log('Tag detected:', tag);
+            // Set a one-time listener for tag discovery
+            NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: { ndefMessage: string | any[]; }) => {
+                console.log('Tag discovered:', tag);
+                setStatus('Tag detected! Check console');
 
-            if (!tag) {
-                setStatus('No tag detected');
-                return;
-            }
+                if (tag?.ndefMessage?.length) {
+                    const payload = tag.ndefMessage[0].payload instanceof Uint8Array
+                        ? tag.ndefMessage[0].payload
+                        : Uint8Array.from(tag.ndefMessage[0].payload);
 
-            let kandiId: string | null = null;
+                    const text = Ndef.text.decodePayload(payload);
+                    console.log('Decoded NDEF text:', text);
+                }
 
-            if (tag.ndefMessage && tag.ndefMessage.length > 0) {
-                const record = tag.ndefMessage[0];
-                const payload = record.payload instanceof Uint8Array
-                    ? record.payload
-                    : Uint8Array.from(record.payload);
-                kandiId = Ndef.text.decodePayload(payload)?.trim().toUpperCase() ?? null;
-            }
+                // End the NFC session
+                NfcManager.invalidateSessionIOS();
+            });
 
-            if (!kandiId && tag.id) {
-                kandiId = tag.id.toUpperCase();
-            }
+            // Register tag event (triggers iOS NFC popup)
+            await NfcManager.registerTagEvent();
+            console.log('iOS NFC popup should be visible now');
 
-            if (!kandiId) throw new Error('Could not read tag ID');
-
-            console.log('Kandi ID / Tag text:', kandiId);
-            setLastTag(kandiId);
-            setStatus('Tag scanned successfully!');
-            Alert.alert('Tag scanned', kandiId);
-        } catch (err: any) {
-            console.warn('Scan failed:', err);
+        } catch (err) {
+            console.warn('NFC error', err);
             setStatus('Scan failed or cancelled');
         }
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>NFC TEST</Text>
+            <Text style={styles.title}>iOS NFC Test</Text>
             <Text style={styles.status}>{status}</Text>
-            {lastTag && <Text style={styles.tagText}>Last tag: {lastTag}</Text>}
 
             <TouchableOpacity style={styles.button} onPress={scanTag}>
                 <Text style={styles.buttonText}>SCAN NFC TAG</Text>
@@ -87,20 +76,14 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     title: {
-        fontSize: 28,
+        fontSize: 26,
         color: '#fff',
         marginBottom: 20,
     },
     status: {
         color: '#aaa',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    tagText: {
-        color: '#0f0',
         marginBottom: 30,
         textAlign: 'center',
-        fontWeight: 'bold',
     },
     button: {
         backgroundColor: '#fff',
@@ -110,6 +93,6 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontWeight: 'bold',
-        color: '#111',
+        color: '#000',
     },
 });
