@@ -10,8 +10,6 @@ import HomeScreen from '../screens/HomeScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ExploreScreen from '../screens/ExploreScreen';
 
-import NfcTest from '../screens/NfcTest';
-
 const Tab = createBottomTabNavigator();
 
 // Custom floating Scan Button
@@ -85,21 +83,6 @@ const AppTabs = () => {
                     tabBarButton: (props) => <ScanButton {...props} />,
                 }}
             />
-
-            <Tab.Screen
-                name="NfcTest"
-                component={NfcTest}
-                options={{
-                    tabBarIcon: ({ focused }) => (
-                        <Icon
-                            name="bug-report"
-                            size={28}
-                            color={focused ? '#000' : '#888'}
-                        />
-                    ),
-                }}
-            />
-
 
             {/* Profile Tab */}
             <Tab.Screen
