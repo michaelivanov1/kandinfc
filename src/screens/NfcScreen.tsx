@@ -60,54 +60,94 @@ const NfcScreen = () => {
     }, []);
 
     useEffect(() => {
-        NfcManager.registerTagEvent().catch(err => console.warn('NFC registration failed', err));
         return () => {
-            void NfcManager.unregisterTagEvent().catch(() => { });
+            NfcManager.cancelTechnologyRequest().catch(() => { });
         };
     }, []);
 
+    
+    
     const readNfcTag = async () => {
-        if (isReading) {
-            setIsReading(false);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-            return;
-        }
+        if (isReading) return;
+        setIsReading(true);
+
+        // reset state for a fresh scan
+        setTagID(null);
+        setKandiData(null);
+        setIsAdopting(false);
+        setOriginLocation('');
+        setPhoto(null);
+        setLocationModalVisible(false);
+        setPhotoModalVisible(false);
 
         try {
-            setIsReading(true);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
-            await NfcManager.requestTechnology(NfcTech.Ndef, { alertMessage: 'Ready to scan NFC tag' });
-            const tag = await NfcManager.getTag();
-            const id = tag?.id ?? null;
+            // cancel any previous session
+            await NfcManager.cancelTechnologyRequest().catch(() => {});
+
+            let tag: any = null;
+            let id: string | null = null;
+
+            if (Platform.OS === 'ios') {
+                await NfcManager.requestTechnology(NfcTech.MifareIOS, {
+                    alertMessage: 'Hold your iphone near the nfc tag',
+                });
+
+                tag = await NfcManager.getTag();
+                console.log('iOS tag object:', tag);
+
+                // use tag.id directly
+                id = tag?.id ?? null;
+            } else {
+                await NfcManager.requestTechnology(NfcTech.Ndef, {
+                    alertMessage: 'ready to scan nfc tag',
+                });
+                tag = await NfcManager.getTag();
+                id = tag?.id ?? null;
+            }
+
+            if (!id) {
+                console.warn('could not read tag ID');
+                return;
+            }
+
+            console.log('scanned tag ID:', id);
             setTagID(id);
 
-            if (!id) return;
-
+            // firestore lookup
             const doc = await firestore().collection('kandis').doc(id).get();
             const data = doc.exists() ? doc.data() : null;
             setKandiData(data);
 
             if (data) {
-                if (currentUser?.uid === data.creatorId) {
+                console.log('firestore data found:', data);
+
+                if (currentUser?.uid && data.creatorId === currentUser.uid) {
+                    console.log('current user is creator, navigating to KandiDetails');
                     navigation.navigate('KandiDetails', { tagID: id });
                     return;
                 }
-                setIsAdopting(true);
+
+                setIsAdopting(true); // tag exists but user is not creator
             } else {
-                setIsAdopting(false);
+                console.log('no firestore data found, new kandi');
+                setIsAdopting(false); // new kandi
             }
 
-            setOriginLocation('');
-            setPhoto(null);
             setLocationModalVisible(true);
-        } catch (ex) {
-            console.warn('NFC error', ex?.toString());
-            Alert.alert('NFC Error', ex?.toString());
+        } catch (ex: any) {
+            console.warn('nfc error', ex?.toString());
         } finally {
             setIsReading(false);
-            await NfcManager.cancelTechnologyRequest().catch(() => { });
+            await NfcManager.cancelTechnologyRequest().catch(() => {});
         }
     };
+
+
+
+
+
+    
+
 
     const handleLocationNext = () => {
         if (!originLocation.trim() && !isAdopting) {
