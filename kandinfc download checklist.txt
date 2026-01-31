@@ -1,0 +1,15 @@
+- node
+- jdk 17
+- git
+- npm i
+
+- android studio (make sdk folder myself and put 
+platforms/
+build-tools/
+platform-tools/
+system-images/
+in it) also download https://developer.android.com/studio#command-tools and make a latest folder inside cmdline-tools
+put contents (bin, lib, notice source) in it. final path: D:\Users\micha\AppData\Local\Android\sdk\cmdline-tools\latest
+then run sdkmanager --licenses in the latest folder
+
+
